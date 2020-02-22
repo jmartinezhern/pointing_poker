@@ -1,0 +1,187 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  schemaS3Location:
+    Type: String
+    Description: "S3 Location to the GraphQL schema"
+  graphQLAPIName:
+    Type: String
+    MaxLength: 32
+    Default: "Pointing Poker GraphQL"
+    Description: Name to assign to this GraphQL API
+  enableDynamoDBTableEncryption:
+    Type: String
+    Description: This is used to specify if the DynamoDB tables should be encrypted.
+    Default: true
+    AllowedValues: [true, false]
+  dynamoDBTableBillingMode:
+    Type: String
+    Description: This is used to configure the billing mode on the DynamoDB tables.
+    Default: PAY_PER_REQUEST
+    AllowedValues: [PROVISIONED, PAY_PER_REQUEST]
+  apiKeyExpiration:
+    Type: Number
+    Description: Value for the AppSync GraphQL API key expiration
+    Default: 1
+
+Conditions:
+  IsDynamoDBBillingModeProvisioned:
+    Fn::Equals:
+      - Ref: dynamoDBTableBillingMode
+      - PROVISIONED
+
+Outputs:
+  GraphQLApiId:
+    Description: Unique AWS AppSync GraphQL API Identifier
+    Value: !GetAtt pointingPokerQLAPI.ApiId
+  GraphQLApiUrl:
+    Description: The Endpoint URL of your GraphQL API.
+    Value: !GetAtt pointingPokerQLAPI.GraphQLUrl
+
+Resources:
+  sessionsTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: "sessionID"
+          AttributeType: "S"
+        - AttributeName: "id"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "sessionID"
+          KeyType: "HASH"
+        - AttributeName: "id"
+          KeyType: "RANGE"
+      ProvisionedThroughput:
+        Fn::If:
+          - IsDynamoDBBillingModeProvisioned
+          - ReadCapacityUnits: "5"
+            WriteCapacityUnits: "5"
+          - Ref: AWS::NoValue
+      BillingMode:
+        Fn::If:
+          - IsDynamoDBBillingModeProvisioned
+          - Ref: AWS::NoValue
+          - Ref: dynamoDBTableBillingMode
+      SSESpecification:
+        SSEEnabled: { "Ref": "enableDynamoDBTableEncryption" }
+      GlobalSecondaryIndexes:
+        - IndexName: "id-index"
+          KeySchema:
+            - AttributeName: "id"
+              KeyType: "HASH"
+          Projection:
+            ProjectionType: "ALL"
+          ProvisionedThroughput:
+            Fn::If:
+              - IsDynamoDBBillingModeProvisioned
+              - ReadCapacityUnits: "5"
+                WriteCapacityUnits: "5"
+              - Ref: AWS::NoValue
+
+  sessionDataSourceLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: pointing_poker.aws.lambda.sessions.handler
+      Runtime: python3.7
+      Environment:
+        Variables:
+          SESSIONS_TABLE_NAME: !Ref sessionsTable
+      CodeUri: ../..
+      Role: !GetAtt [sessionDataSourceLambdaExecutionRole, Arn]
+
+  sessionDataSourceLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+
+  appSyncLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: appsync.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: app-sync-lambda-execution-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:invokeFunction
+                Resource:
+                  - !GetAtt [sessionDataSourceLambda, Arn]
+                  - !Join ['', [!GetAtt [sessionDataSourceLambda, Arn], ':*']]
+
+  dynamodbAccessPolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: sessions-table-access
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: dynamodb:*
+            Resource:
+              - !GetAtt sessionsTable.Arn
+              - !Sub ${sessionsTable.Arn}/index/id-index
+      Roles:
+        - !Ref sessionDataSourceLambdaExecutionRole
+
+  pointingPokerQLAPI:
+    Type: AWS::AppSync::GraphQLApi
+    Properties:
+      Name: !Ref graphQLAPIName
+      AuthenticationType: API_KEY
+
+  pointingPokerQLSchema:
+    Type: "AWS::AppSync::GraphQLSchema"
+    Properties:
+      ApiId: !GetAtt pointingPokerQLAPI.ApiId
+      DefinitionS3Location: !Ref schemaS3Location
+
+  sessionsLambdaDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt [pointingPokerQLAPI, ApiId]
+      Name: source
+      Type: AWS_LAMBDA
+      LambdaConfig:
+        LambdaFunctionArn: !GetAtt [sessionDataSourceLambda, Arn]
+      ServiceRoleArn: !GetAtt [appSyncLambdaExecutionRole, Arn]
+
+  appSyncAPIKey:
+    Type: AWS::AppSync::ApiKey
+    Properties:
+      ApiId: !GetAtt [pointingPokerQLAPI, ApiId]
+      #Expires: !Ref apiKeyExpiration
+
+  createSessionResolver:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId: !GetAtt ["pointingPokerQLAPI", ApiId]
+      TypeName: Mutation
+      FieldName: createSession
+      DataSourceName: !GetAtt [sessionsLambdaDataSource, Name]
+      RequestMappingTemplate: |
+        {
+            "version" : "2017-02-28",
+            "operation": "Invoke",
+            "payload": $util.toJson($context.arguments)
+        }
+      ResponseMappingTemplate: |
+        $util.toJson($context.result)

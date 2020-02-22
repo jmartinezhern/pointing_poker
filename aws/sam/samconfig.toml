@@ -1,0 +1,11 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "pointing-poker-stack"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-zo2fu8v6z4os"
+s3_prefix = "pointing-poker-stack"
+region = "us-east-2"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "schemaS3Location=\"s3://schemas-bucket/schema.graphql\" graphQLAPIName=\"Pointing Poker GraphQL\" enableDynamoDBTableEncryption=\"true\" dynamoDBTableBillingMode=\"PAY_PER_REQUEST\" apiKeyExpiration=\"1\""
+
