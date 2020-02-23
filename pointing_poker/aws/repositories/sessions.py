@@ -2,13 +2,15 @@ from os import environ
 
 import boto3
 
+from pointing_poker.models import models
+
 
 class SessionsDynamoDBRepo:
     def __init__(self):
         self.db = boto3.resource('dynamodb')
-        self.table = self.db.Table(environ['SESSIONS_TABLE_NAME'])
+        self.table = self.db.Table(environ['SESSIONS_TABLE_NAME'] if 'SESSIONS_TABLE_NAME' in environ else 'sessions')
 
-    def create(self, session):
+    def create(self, session) -> models.Session:
         self.table.put_item(
             Item={
                 'id': session.id,
