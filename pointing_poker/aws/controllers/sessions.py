@@ -47,3 +47,33 @@ def join_session(event, _):
 
     return session_service.SessionService(session_repo.SessionsDynamoDBRepo()).join_session(
         session_id, participant_description).to_json()
+
+
+def set_vote(event, _):
+    session_id = event['sessionID']
+    participant_id = event['participantID']
+    vote = models.Vote(points=event['vote']['points'], abstained=event['vote']['abstained'])
+
+    return session_service.SessionService(session_repo.SessionsDynamoDBRepo()).set_vote(session_id, participant_id,
+                                                                                        vote)
+
+
+def start_voting(event, _):
+    session_id = event['sessionID']
+
+    return session_service.SessionService(session_repo.SessionsDynamoDBRepo()).start_voting(session_id)
+
+
+def stop_voting(event, _):
+    session_id = event['sessionID']
+
+    return session_service.SessionService(session_repo.SessionsDynamoDBRepo()).stop_voting(session_id)
+
+
+def close_session(event, _):
+    session_id = event['sessionID']
+    description = event['issue']
+
+    issue = models.ReviewingIssueDescription(
+
+    )

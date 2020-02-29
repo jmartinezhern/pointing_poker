@@ -1,6 +1,12 @@
 from datetime import date, datetime
-from dataclasses import dataclass
-from typing import List
+from dataclasses import dataclass, field
+from typing import List, Optional
+
+
+@dataclass
+class Vote:
+    points: int
+    abstained: bool
 
 
 @dataclass
@@ -18,7 +24,7 @@ class Participant:
     id: str
     name: str
     isModerator: bool
-    currentVote: int
+    vote: Vote
 
 
 @dataclass
@@ -30,8 +36,9 @@ class Session:
     pointingMin: int
     expiration: int
     reviewingIssue: ReviewingIssue
+    votingStarted: bool
 
-    participants: List[Participant] = None
+    participants: List[Participant] = field(default_factory=list)
 
     createdAt: date = datetime.utcnow()
 
@@ -52,3 +59,10 @@ class SessionDescription:
 @dataclass
 class ParticipantDescription:
     name: str
+
+
+@dataclass
+class ReviewingIssueDescription:
+    title: str
+    url: Optional[str]
+    description: Optional[str]

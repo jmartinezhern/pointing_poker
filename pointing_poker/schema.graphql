@@ -1,93 +1,92 @@
 input IssueDescription {
-	title: String!
-	description: String
-	url: String
+    title: String!
+    description: String
+    url: String
 }
 
 type Mutation {
-	createSession(sessionDescription: SessionDescription, moderator: ParticipantDescription): Session
-	setReviewingIssue(sessionID: ID!, issue: IssueDescription): Session
-	setVote(sessionID: ID!, vote: VoteDescription): Session
-	setModerator(sessionID: ID!, moderatorID: ID!): Session
-	joinSession(sessionID: ID!, participant: ParticipantDescription): Session
-	leaveSession(sessionID: ID!, participantID: ID!): Session
-	startVoting(sessionID: ID!, durationInSecs: Int): Session
-	stopVoting(sessionID: ID!): Session
-	closeSession(sessionID: ID!): Session
+    createSession(sessionDescription: SessionDescription, moderator: ParticipantDescription): Session
+    setReviewingIssue(sessionID: ID!, issue: IssueDescription): Session
+    setVote(sessionID: ID!, participantID: ID!, vote: VoteDescription): Session
+    joinSession(sessionID: ID!, participant: ParticipantDescription): Session
+    leaveSession(sessionID: ID!, participantID: ID!): Session
+    startVoting(sessionID: ID!, durationInSecs: Int): Session
+    stopVoting(sessionID: ID!): Session
+    closeSession(sessionID: ID!): Session
 }
 
 type Participant {
-	id: ID!
-	name: String!
-	isModerator: Boolean
-	currentSession: Session
+    id: ID!
+    name: String!
+    isModerator: Boolean
+    currentSession: Session
+    vote: Vote
 }
 
 input ParticipantDescription {
-	name: String!
+    name: String!
 }
 
 type Query {
-	session(sessionID: ID!): Session
-	me(id: ID!): Participant
+    session(sessionID: ID!): Session
+    me(id: ID!): Participant
 }
 
 type ReviewingIssue {
-	title: String!
-	url: String
-	description: String
+    title: String!
+    url: String
+    description: String
 }
 
 type Session {
-	id: ID!
-	createdAt: String
-	moderator: Participant
-	participants(after: ID, first: Int): [Participant]
-	votes(after: ID, first: Int): [Vote]
-	name: String!
-	reviewingIssue: ReviewingIssue
-	isOpen: Boolean
-	pointingMin: Int!
-	pointingMax: Int!
-	expiration: Int!
+    id: ID!
+    createdAt: String
+    moderator: Participant
+    participants(after: ID, first: Int): [Participant]
+    name: String!
+    reviewingIssue: ReviewingIssue
+    isOpen: Boolean
+    pointingMin: Int!
+    pointingMax: Int!
+    expiration: Int!
 }
 
 input SessionDescription {
-	name: String!
-	reviewingIssue: IssueDescription!
-	pointingMin: Int!
-	pointingMax: Int!
+    name: String!
+    reviewingIssue: IssueDescription!
+    pointingMin: Int!
+    pointingMax: Int!
 }
 
 type Subscription {
-	voteWasSet(sessionID: ID!): Session
-		@aws_subscribe(mutations: ["setVote"])
-	moderatorWasSet(sessionID: ID!): Session
-		@aws_subscribe(mutations: ["setModerator"])
-	votingWasStarted(sessionID: ID!): Session
-		@aws_subscribe(mutations: ["startVoting"])
-	participantJoinedSession(sessionID: ID!): Session
-		@aws_subscribe(mutations: ["joinSession"])
-	votingWasStopped(sessionID: ID!): Session
-		@aws_subscribe(mutations: ["stopVoting"])
-	sessionWasClosed(sessionID: ID!): Session
-		@aws_subscribe(mutations: ["closeSession"])
+    voteWasSet(sessionID: ID!): Session
+        @aws_subscribe(mutations: ["setVote"])
+
+    votingWasStarted(sessionID: ID!): Session
+        @aws_subscribe(mutations: ["startVoting"])
+
+    votingWasStopped(sessionID: ID!): Session
+        @aws_subscribe(mutations: ["stopVoting"])
+
+    participantJoinedSession(sessionID: ID!): Session
+        @aws_subscribe(mutations: ["joinSession"])
+
+    sessionWasClosed(sessionID: ID!): Session
+        @aws_subscribe(mutations: ["closeSession"])
 }
 
 type Vote {
-	number: Int
-	abstained: Boolean!
-	participant: Participant
+    points: Int
+    abstained: Boolean!
 }
 
 input VoteDescription {
-	voterID: ID!
-	points: Int
-	abstained: Boolean!
+    points: Int
+    abstained: Boolean!
 }
 
 schema {
-	query: Query
-	mutation: Mutation
-	subscription: Subscription
+    query: Query
+    mutation: Mutation
+    subscription: Subscription
 }

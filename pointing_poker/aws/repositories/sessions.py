@@ -27,6 +27,7 @@ class SessionsDynamoDBRepo:
                 'pointingMax': session.pointingMax,
                 'pointingMin': session.pointingMin,
                 'expiration': session.expiration,
+                'votingStarted': session.votingStarted,
                 'type': 'session'
             }
         )
@@ -45,7 +46,7 @@ class SessionsDynamoDBRepo:
             id=item['id'],
             name=item['name'],
             isModerator=item['isModerator'],
-            currentVote=item['currentVote']
+            vote=models.Vote(points=item['points'], abstained=item['abstained'])
         ) for item in items if item['type'] == 'participant']
 
         session_item = [item for item in items if item['type'] == 'session'][0]
@@ -58,6 +59,7 @@ class SessionsDynamoDBRepo:
             pointingMax=session_item['pointingMax'],
             pointingMin=session_item['pointingMin'],
             expiration=session_item['expiration'],
+            votingStarted=False,
             reviewingIssue=models.ReviewingIssue(
                 title=session_item['reviewingIssueTitle'],
                 description=session_item['reviewingIssueDescription'],
@@ -83,7 +85,42 @@ class SessionsDynamoDBRepo:
             id=item['id'],
             name=item['name'],
             isModerator=item['isModerator'],
-            currentVote=item['currentVote']
+            vote=models.Vote(points=item['points'], abstained=item['abstained'])
+        )
+
+    def set_reviewing_issue(self, session_id: str, issue: models.ReviewingIssue):
+        self.table.update_item(
+            Key={
+                'sessionID': session_id,
+                'id': session_id,
+            },
+            UpdateExpression="SET reviewingIssueTitle = :title, "
+                             "reviewingIssueDescription = :description, reviewingIssueURL = :url",
+            ExpressionAttributeValues={
+                ':title': issue.title,
+                ':description': issue.description,
+                ':url': issue.url,
+            }
+        )
+
+    def set_voting_state(self, session_id: str, value: bool) -> None:
+        self.table.update_item(
+            Key={
+                'sessionID': session_id,
+                'id': session_id,
+            },
+            UpdateExpression='SET votingStarted = :value',
+            ExpressionAttributeValues={
+                ':value': value,
+            }
+        )
+
+    def delete_session(self, session_id) -> None:
+        self.table.delete_item(
+            Key={
+                'sessionID': session_id,
+                'id': session_id
+            }
         )
 
     def add_participant(self, session_id: str, participant: models.Participant) -> None:
@@ -93,7 +130,8 @@ class SessionsDynamoDBRepo:
                 'id': participant.id,
                 'name': participant.name,
                 'isModerator': participant.isModerator,
-                'currentVote': participant.currentVote,
+                'points': participant.vote.points,
+                'abstained': participant.vote.abstained,
                 'type': 'participant'
             }
         )
@@ -103,5 +141,18 @@ class SessionsDynamoDBRepo:
             Key={
                 'sessionID': session_id,
                 'id': participant_id
+            }
+        )
+
+    def set_vote(self, session_id: str, participant_id: str, vote: models.Vote) -> None:
+        self.table.update_item(
+            Key={
+                'sessionID': session_id,
+                'id': participant_id,
+            },
+            UpdateExpression='SET points = :points, abstained = :abstained',
+            ExpressionAttributeValues={
+                ':abstained': vote.abstained,
+                ':points': vote.points
             }
         )
