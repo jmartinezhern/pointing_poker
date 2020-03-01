@@ -80,18 +80,84 @@ Resources:
                 WriteCapacityUnits: "5"
               - Ref: AWS::NoValue
 
-  sessionDataSourceLambda:
+  createSessionDataSourceLambda:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: pointing_poker.aws.lambda.sessions.handler
+      Handler: pointing_poker.aws.controllers.sessions.create_session
       Runtime: python3.7
       Environment:
         Variables:
           SESSIONS_TABLE_NAME: !Ref sessionsTable
       CodeUri: ../..
-      Role: !GetAtt [sessionDataSourceLambdaExecutionRole, Arn]
+      Role: !GetAtt [dataSourceLambdaExecutionRole, Arn]
 
-  sessionDataSourceLambdaExecutionRole:
+  joinSessionDataSourceLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: pointing_poker.aws.controllers.sessions.join_session
+      Runtime: python3.7
+      Environment:
+        Variables:
+          SESSIONS_TABLE_NAME: !Ref sessionsTable
+      CodeUri: ../..
+      Role: !GetAtt [dataSourceLambdaExecutionRole, Arn]
+
+  sessionDataSourceLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: pointing_poker.aws.controllers.sessions.session
+      Runtime: python3.7
+      Environment:
+        Variables:
+          SESSIONS_TABLE_NAME: !Ref sessionsTable
+      CodeUri: ../..
+      Role: !GetAtt [dataSourceLambdaExecutionRole, Arn]
+
+  setVoteDataSourceLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: pointing_poker.aws.controllers.sessions.set_vote
+      Runtime: python3.7
+      Environment:
+        Variables:
+          SESSIONS_TABLE_NAME: !Ref sessionsTable
+      CodeUri: ../..
+      Role: !GetAtt [dataSourceLambdaExecutionRole, Arn]
+
+  startVotingDataSourceLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: pointing_poker.aws.controllers.sessions.start_voting
+      Runtime: python3.7
+      Environment:
+        Variables:
+          SESSIONS_TABLE_NAME: !Ref sessionsTable
+      CodeUri: ../..
+      Role: !GetAtt [dataSourceLambdaExecutionRole, Arn]
+
+  stopVotingDataSourceLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: pointing_poker.aws.controllers.sessions.stop_voting
+      Runtime: python3.7
+      Environment:
+        Variables:
+          SESSIONS_TABLE_NAME: !Ref sessionsTable
+      CodeUri: ../..
+      Role: !GetAtt [dataSourceLambdaExecutionRole, Arn]
+
+  closeSessionDataSourceLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: pointing_poker.aws.controllers.sessions.close_session
+      Runtime: python3.7
+      Environment:
+        Variables:
+          SESSIONS_TABLE_NAME: !Ref sessionsTable
+      CodeUri: ../..
+      Role: !GetAtt [dataSourceLambdaExecutionRole, Arn]
+
+  dataSourceLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -124,8 +190,12 @@ Resources:
               - Effect: Allow
                 Action: lambda:invokeFunction
                 Resource:
+                  - !GetAtt [createSessionDataSourceLambda, Arn]
+                  - !GetAtt [joinSessionDataSourceLambda, Arn]
+                  - !GetAtt [startVotingDataSourceLambda, Arn]
+                  - !GetAtt [stopVotingDataSourceLambda, Arn]
+                  - !GetAtt [closeSessionDataSourceLambda, Arn]
                   - !GetAtt [sessionDataSourceLambda, Arn]
-                  - !Join ['', [!GetAtt [sessionDataSourceLambda, Arn], ':*']]
 
   dynamodbAccessPolicy:
     Type: "AWS::IAM::Policy"
@@ -140,7 +210,7 @@ Resources:
               - !GetAtt sessionsTable.Arn
               - !Sub ${sessionsTable.Arn}/index/id-index
       Roles:
-        - !Ref sessionDataSourceLambdaExecutionRole
+        - !Ref dataSourceLambdaExecutionRole
 
   pointingPokerQLAPI:
     Type: AWS::AppSync::GraphQLApi
@@ -154,21 +224,21 @@ Resources:
       ApiId: !GetAtt pointingPokerQLAPI.ApiId
       DefinitionS3Location: !Ref schemaS3Location
 
-  sessionsLambdaDataSource:
-    Type: AWS::AppSync::DataSource
-    Properties:
-      ApiId: !GetAtt [pointingPokerQLAPI, ApiId]
-      Name: source
-      Type: AWS_LAMBDA
-      LambdaConfig:
-        LambdaFunctionArn: !GetAtt [sessionDataSourceLambda, Arn]
-      ServiceRoleArn: !GetAtt [appSyncLambdaExecutionRole, Arn]
-
   appSyncAPIKey:
     Type: AWS::AppSync::ApiKey
     Properties:
       ApiId: !GetAtt [pointingPokerQLAPI, ApiId]
       #Expires: !Ref apiKeyExpiration
+
+  createSessionLambdaDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt [pointingPokerQLAPI, ApiId]
+      Name: createSessionSource
+      Type: AWS_LAMBDA
+      LambdaConfig:
+        LambdaFunctionArn: !GetAtt [createSessionDataSourceLambda, Arn]
+      ServiceRoleArn: !GetAtt [appSyncLambdaExecutionRole, Arn]
 
   createSessionResolver:
     Type: AWS::AppSync::Resolver
@@ -176,7 +246,111 @@ Resources:
       ApiId: !GetAtt ["pointingPokerQLAPI", ApiId]
       TypeName: Mutation
       FieldName: createSession
-      DataSourceName: !GetAtt [sessionsLambdaDataSource, Name]
+      DataSourceName: !GetAtt [createSessionLambdaDataSource, Name]
+      RequestMappingTemplate: |
+        {
+            "version" : "2017-02-28",
+            "operation": "Invoke",
+            "payload": $util.toJson($context.arguments)
+        }
+      ResponseMappingTemplate: |
+        $util.toJson($context.result)
+
+  joinSessionLambdaDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt [pointingPokerQLAPI, ApiId]
+      Name: joinSessionSource
+      Type: AWS_LAMBDA
+      LambdaConfig:
+        LambdaFunctionArn: !GetAtt [joinSessionDataSourceLambda, Arn]
+      ServiceRoleArn: !GetAtt [appSyncLambdaExecutionRole, Arn]
+
+  joinSessionResolver:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId: !GetAtt ["pointingPokerQLAPI", ApiId]
+      TypeName: Mutation
+      FieldName: joinSession
+      DataSourceName: !GetAtt [joinSessionLambdaDataSource, Name]
+      RequestMappingTemplate: |
+        {
+            "version" : "2017-02-28",
+            "operation": "Invoke",
+            "payload": $util.toJson($context.arguments)
+        }
+      ResponseMappingTemplate: |
+        $util.toJson($context.result)
+
+  sessionLambdaDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt [pointingPokerQLAPI, ApiId]
+      Name: sessionDataSource
+      Type: AWS_LAMBDA
+      LambdaConfig:
+        LambdaFunctionArn: !GetAtt [sessionDataSourceLambda, Arn]
+      ServiceRoleArn: !GetAtt [appSyncLambdaExecutionRole, Arn]
+
+  sessionResolver:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId: !GetAtt ["pointingPokerQLAPI", ApiId]
+      TypeName: Query
+      FieldName: session
+      DataSourceName: !GetAtt [sessionLambdaDataSource, Name]
+      RequestMappingTemplate: |
+        {
+            "version" : "2017-02-28",
+            "operation": "Invoke",
+            "payload": $util.toJson($context.arguments)
+        }
+      ResponseMappingTemplate: |
+        $util.toJson($context.result)
+
+  startVotingLambdaDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt [pointingPokerQLAPI, ApiId]
+      Name: startVotingSource
+      Type: AWS_LAMBDA
+      LambdaConfig:
+        LambdaFunctionArn: !GetAtt [startVotingDataSourceLambda, Arn]
+      ServiceRoleArn: !GetAtt [appSyncLambdaExecutionRole, Arn]
+
+  startVotingResolver:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId: !GetAtt ["pointingPokerQLAPI", ApiId]
+      TypeName: Mutation
+      FieldName: startVoting
+      DataSourceName: !GetAtt [startVotingLambdaDataSource, Name]
+      RequestMappingTemplate: |
+        {
+            "version" : "2017-02-28",
+            "operation": "Invoke",
+            "payload": $util.toJson($context.arguments)
+        }
+      ResponseMappingTemplate: |
+        $util.toJson($context.result)
+
+  stopVotingLambdaDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt [pointingPokerQLAPI, ApiId]
+      Name: stopVotingSource
+      Type: AWS_LAMBDA
+      LambdaConfig:
+        LambdaFunctionArn: !GetAtt [stopVotingDataSourceLambda, Arn]
+      ServiceRoleArn: !GetAtt [appSyncLambdaExecutionRole, Arn]
+
+  stopVotingResolver:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId: !GetAtt ["pointingPokerQLAPI", ApiId]
+      TypeName: Mutation
+      FieldName: stopVoting
+      DataSourceName: !GetAtt [stopVotingLambdaDataSource, Name]
       RequestMappingTemplate: |
         {
             "version" : "2017-02-28",

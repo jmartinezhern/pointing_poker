@@ -45,10 +45,10 @@ type Session {
     participants(after: ID, first: Int): [Participant]
     name: String!
     reviewingIssue: ReviewingIssue
-    isOpen: Boolean
     pointingMin: Int!
     pointingMax: Int!
     expiration: Int!
+    votingStarted: Boolean!
 }
 
 input SessionDescription {

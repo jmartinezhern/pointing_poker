@@ -1,9 +1,9 @@
 from os import environ
-from datetime import datetime
 from typing import Union
 
+from botocore.exceptions import ClientError
 from boto3 import resource
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Attr, Key
 
 from pointing_poker.models import models
 
@@ -18,12 +18,11 @@ class SessionsDynamoDBRepo:
             Item={
                 'id': session.id,
                 'sessionID': session.id,
-                'createdAt': str(session.createdAt),
+                'createdAt': session.createdAt,
                 'name': session.name,
                 'reviewingIssueTitle': session.reviewingIssue.title,
                 'reviewingIssueDescription': session.reviewingIssue.description,
                 'reviewingIssueURL': session.reviewingIssue.url,
-                'isOpen': session.isOpen,
                 'pointingMax': session.pointingMax,
                 'pointingMin': session.pointingMin,
                 'expiration': session.expiration,
@@ -54,8 +53,7 @@ class SessionsDynamoDBRepo:
         return models.Session(
             id=session_item['sessionID'],
             name=session_item['name'],
-            createdAt=datetime.fromisoformat(session_item['createdAt']),
-            isOpen=session_item['isOpen'],
+            createdAt=session_item['createdAt'],
             pointingMax=session_item['pointingMax'],
             pointingMin=session_item['pointingMin'],
             expiration=session_item['expiration'],
@@ -145,14 +143,21 @@ class SessionsDynamoDBRepo:
         )
 
     def set_vote(self, session_id: str, participant_id: str, vote: models.Vote) -> None:
-        self.table.update_item(
-            Key={
-                'sessionID': session_id,
-                'id': participant_id,
-            },
-            UpdateExpression='SET points = :points, abstained = :abstained',
-            ExpressionAttributeValues={
-                ':abstained': vote.abstained,
-                ':points': vote.points
-            }
-        )
+        try:
+            self.table.update_item(
+                Key={
+                    'sessionID': session_id,
+                    'id': participant_id,
+                },
+                ConditionExpression=Attr('id').eq(participant_id),
+                UpdateExpression='SET points = :points, abstained = :abstained',
+                ExpressionAttributeValues={
+                    ':abstained': vote.abstained,
+                    ':points': vote.points
+                }
+            )
+        except ClientError as err:
+            if err.response['Error']['Code'] == 'ConditionalCheckFailedException':
+                raise Exception('resource not found')
+            else:
+                raise Exception('failed to update item')

@@ -1,4 +1,3 @@
-from datetime import date, datetime
 from dataclasses import dataclass, field
 from typing import List, Optional
 
@@ -31,7 +30,6 @@ class Participant:
 class Session:
     id: str
     name: str
-    isOpen: bool
     pointingMax: int
     pointingMin: int
     expiration: int
@@ -40,7 +38,7 @@ class Session:
 
     participants: List[Participant] = field(default_factory=list)
 
-    createdAt: date = datetime.utcnow()
+    createdAt: str = ''
 
     def to_json(self):
         self_dict = self.__dict__

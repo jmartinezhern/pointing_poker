@@ -20,7 +20,6 @@ def session_factory() -> models.Session:
             url='example.com'
         ),
         votingStarted=False,
-        isOpen=True,
         expiration=86400  # 24 hours in seconds
     )
 
@@ -65,7 +64,6 @@ class SessionsRepositoryTestCase(unittest.TestCase):
         self.assertEqual(item['id'], session.id)
         self.assertEqual(item['pointingMax'], session.pointingMax)
         self.assertEqual(item['pointingMin'], session.pointingMin)
-        self.assertEqual(item['isOpen'], session.isOpen)
         self.assertEqual(item['reviewingIssueTitle'], session.reviewingIssue.title)
         self.assertEqual(item['reviewingIssueURL'], session.reviewingIssue.url)
         self.assertEqual(item['reviewingIssueDescription'], session.reviewingIssue.description)
@@ -91,7 +89,6 @@ class SessionsRepositoryTestCase(unittest.TestCase):
                 url='example.com'
             ),
             votingStarted=False,
-            isOpen=True,
             expiration=86400  # 24 hours in seconds
         )
 
@@ -125,7 +122,6 @@ class SessionsRepositoryTestCase(unittest.TestCase):
                 url='example.com'
             ),
             votingStarted=False,
-            isOpen=True,
             expiration=86400  # 24 hours in seconds
         )
 
@@ -154,7 +150,6 @@ class SessionsRepositoryTestCase(unittest.TestCase):
                 url='example.com'
             ),
             votingStarted=False,
-            isOpen=True,
             expiration=86400  # 24 hours in seconds
         )
 
@@ -324,7 +319,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
 
         repo.add_participant(session.id, participant)
 
-        repo.set_vote(session.id, participant.id, models.Vote(points=5, abstained=False))
+        repo.set_vote(session.id, 'bogus', models.Vote(points=5, abstained=False))
 
         participant = repo.get_participant(session.id, participant.id)
 
