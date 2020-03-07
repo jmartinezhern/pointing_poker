@@ -20,9 +20,6 @@ class SessionsDynamoDBRepo:
                 'sessionID': session.id,
                 'createdAt': session.createdAt,
                 'name': session.name,
-                'reviewingIssueTitle': session.reviewingIssue.title,
-                'reviewingIssueDescription': session.reviewingIssue.description,
-                'reviewingIssueURL': session.reviewingIssue.url,
                 'pointingMax': session.pointingMax,
                 'pointingMin': session.pointingMin,
                 'expiration': session.expiration,
@@ -50,7 +47,7 @@ class SessionsDynamoDBRepo:
 
         session_item = [item for item in items if item['type'] == 'session'][0]
 
-        return models.Session(
+        session = models.Session(
             id=session_item['sessionID'],
             name=session_item['name'],
             createdAt=session_item['createdAt'],
@@ -58,15 +55,20 @@ class SessionsDynamoDBRepo:
             pointingMin=session_item['pointingMin'],
             expiration=session_item['expiration'],
             votingStarted=False,
-            reviewingIssue=models.ReviewingIssue(
-                title=session_item['reviewingIssueTitle'],
-                description=session_item['reviewingIssueDescription'],
-                url=session_item['reviewingIssueURL'],
-            ),
             participants=participants
         )
 
-    def get_participant(self, session_id: str, participant_id: str) -> Union[models.Participant, None]:
+        if any(key in session_item for key in
+               ['reviewingIssueTitle', 'reviewingIssueDescription', 'reviewingIssueURL']):
+            session.reviewingIssue = models.ReviewingIssue(
+                title=session_item.get('reviewingIssueTitle'),
+                description=session_item.get('reviewingIssueDescription'),
+                url=session_item.get('reviewingIssueURL'),
+            )
+
+        return session
+
+    def get_participant_in_session(self, session_id: str, participant_id: str) -> Union[models.Participant, None]:
         record = self.table.get_item(
             Key={
                 'sessionID': session_id,
@@ -78,6 +80,26 @@ class SessionsDynamoDBRepo:
             return None
 
         item = record['Item']
+
+        return models.Participant(
+            id=item['id'],
+            name=item['name'],
+            isModerator=item['isModerator'],
+            vote=models.Vote(points=item['points'], abstained=item['abstained'])
+        )
+
+    def get_participant(self, user_id: str):
+        records = self.table.query(
+            IndexName='id-index',
+            KeyConditionExpression=Key('id').eq(user_id)
+        )
+
+        items = records['Items']
+
+        if not items:
+            return None
+
+        item = items[0]
 
         return models.Participant(
             id=item['id'],

@@ -113,6 +113,17 @@ Resources:
       CodeUri: ../..
       Role: !GetAtt [dataSourceLambdaExecutionRole, Arn]
 
+  participantDataSourceLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: pointing_poker.aws.controllers.sessions.participant
+      Runtime: python3.7
+      Environment:
+        Variables:
+          SESSIONS_TABLE_NAME: !Ref sessionsTable
+      CodeUri: ../..
+      Role: !GetAtt [dataSourceLambdaExecutionRole, Arn]
+
   setVoteDataSourceLambda:
     Type: AWS::Serverless::Function
     Properties:
@@ -128,6 +139,17 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: pointing_poker.aws.controllers.sessions.start_voting
+      Runtime: python3.7
+      Environment:
+        Variables:
+          SESSIONS_TABLE_NAME: !Ref sessionsTable
+      CodeUri: ../..
+      Role: !GetAtt [dataSourceLambdaExecutionRole, Arn]
+
+  setReviewingIssueDataSourceLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: pointing_poker.aws.controllers.sessions.set_reviewing_issue
       Runtime: python3.7
       Environment:
         Variables:
@@ -196,6 +218,8 @@ Resources:
                   - !GetAtt [stopVotingDataSourceLambda, Arn]
                   - !GetAtt [closeSessionDataSourceLambda, Arn]
                   - !GetAtt [sessionDataSourceLambda, Arn]
+                  - !GetAtt [participantDataSourceLambda, Arn]
+                  - !GetAtt [setReviewingIssueDataSourceLambda, Arn]
 
   dynamodbAccessPolicy:
     Type: "AWS::IAM::Policy"
@@ -308,6 +332,32 @@ Resources:
       ResponseMappingTemplate: |
         $util.toJson($context.result)
 
+  setReviewingIssueLambdaDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt [pointingPokerQLAPI, ApiId]
+      Name: setReviewingIssueSource
+      Type: AWS_LAMBDA
+      LambdaConfig:
+        LambdaFunctionArn: !GetAtt [setReviewingIssueDataSourceLambda, Arn]
+      ServiceRoleArn: !GetAtt [appSyncLambdaExecutionRole, Arn]
+
+  setReviewingIssueResolver:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId: !GetAtt ["pointingPokerQLAPI", ApiId]
+      TypeName: Mutation
+      FieldName: setReviewingIssue
+      DataSourceName: !GetAtt [setReviewingIssueLambdaDataSource, Name]
+      RequestMappingTemplate: |
+        {
+            "version" : "2017-02-28",
+            "operation": "Invoke",
+            "payload": $util.toJson($context.arguments)
+        }
+      ResponseMappingTemplate: |
+        $util.toJson($context.result)
+
   startVotingLambdaDataSource:
     Type: AWS::AppSync::DataSource
     Properties:
@@ -351,6 +401,32 @@ Resources:
       TypeName: Mutation
       FieldName: stopVoting
       DataSourceName: !GetAtt [stopVotingLambdaDataSource, Name]
+      RequestMappingTemplate: |
+        {
+            "version" : "2017-02-28",
+            "operation": "Invoke",
+            "payload": $util.toJson($context.arguments)
+        }
+      ResponseMappingTemplate: |
+        $util.toJson($context.result)
+
+  participantLambdaDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt [pointingPokerQLAPI, ApiId]
+      Name: participantSource
+      Type: AWS_LAMBDA
+      LambdaConfig:
+        LambdaFunctionArn: !GetAtt [participantDataSourceLambda, Arn]
+      ServiceRoleArn: !GetAtt [appSyncLambdaExecutionRole, Arn]
+
+  participantResolver:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId: !GetAtt ["pointingPokerQLAPI", ApiId]
+      TypeName: Query
+      FieldName: participant
+      DataSourceName: !GetAtt [participantLambdaDataSource, Name]
       RequestMappingTemplate: |
         {
             "version" : "2017-02-28",

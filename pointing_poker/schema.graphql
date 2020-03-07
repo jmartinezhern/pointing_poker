@@ -1,11 +1,11 @@
 input IssueDescription {
-    title: String!
+    title: String
     description: String
     url: String
 }
 
 type Mutation {
-    createSession(sessionDescription: SessionDescription, moderator: ParticipantDescription): Session
+    createSession(sessionDescription: SessionDescription!, moderator: ParticipantDescription!): Session
     setReviewingIssue(sessionID: ID!, issue: IssueDescription): Session
     setVote(sessionID: ID!, participantID: ID!, vote: VoteDescription): Session
     joinSession(sessionID: ID!, participant: ParticipantDescription): Session
@@ -18,7 +18,7 @@ type Mutation {
 type Participant {
     id: ID!
     name: String!
-    isModerator: Boolean
+    isModerator: Boolean!
     currentSession: Session
     vote: Vote
 }
@@ -29,7 +29,7 @@ input ParticipantDescription {
 
 type Query {
     session(sessionID: ID!): Session
-    me(id: ID!): Participant
+    participant(id: ID!): Participant
 }
 
 type ReviewingIssue {
@@ -41,8 +41,7 @@ type ReviewingIssue {
 type Session {
     id: ID!
     createdAt: String
-    moderator: Participant
-    participants(after: ID, first: Int): [Participant]
+    participants(after: ID, first: Int): [Participant!]!
     name: String!
     reviewingIssue: ReviewingIssue
     pointingMin: Int!
@@ -53,7 +52,6 @@ type Session {
 
 input SessionDescription {
     name: String!
-    reviewingIssue: IssueDescription!
     pointingMin: Int!
     pointingMax: Int!
 }

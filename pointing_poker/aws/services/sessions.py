@@ -1,5 +1,6 @@
 from datetime import datetime
 from uuid import uuid4
+from typing import Union
 
 from pointing_poker.models import models
 
@@ -8,19 +9,29 @@ class SessionService:
     def __init__(self, repo):
         self.repo = repo
 
-    def create_session(self, description: models.SessionDescription) -> models.Session:
+    def create_session(self, description: models.SessionDescription,
+                       moderator: models.ParticipantDescription) -> models.Session:
         session = models.Session(
             id=str(uuid4()),
             name=description.name,
             pointingMax=description.pointingMax,
             pointingMin=description.pointingMin,
-            reviewingIssue=description.reviewingIssue,
             votingStarted=False,
             expiration=86400,  # 24 hours in seconds
+            participants=[],
             createdAt=str(datetime.utcnow())
         )
 
+        session.participants.append(models.Participant(
+            id=str(uuid4()),
+            name=moderator.name,
+            isModerator=True,
+            vote=models.Vote(0, True),
+        ))
+
         self.repo.create(session)
+
+        self.repo.add_participant(session.id, session.participants[0])
 
         return session
 
@@ -33,7 +44,7 @@ class SessionService:
         session.reviewingIssue = models.ReviewingIssue(
             title=issue.title,
             description=issue.description,
-            url=issue.description
+            url=issue.url,
         )
 
         self.repo.set_reviewing_issue(session_id, session.reviewingIssue)
@@ -41,7 +52,12 @@ class SessionService:
         return session
 
     def session(self, session_id: str) -> models.Session:
-        return self.repo.get(session_id)
+        session: Union[models.Session, None] = self.repo.get(session_id)
+
+        if session is None:
+            raise Exception(f"session with id {session_id} not found")
+
+        return session
 
     def join_session(self, session_id: str, participant_description: models.ParticipantDescription) -> models.Session:
         session: models.Session = self.repo.get(session_id)
@@ -59,7 +75,7 @@ class SessionService:
         return session
 
     def leave_session(self, session_id: str, participant_id: str) -> models.Session:
-        participant = self.repo.get_participant(session_id, participant_id)
+        participant = self.repo.get_participant_in_session(session_id, participant_id)
 
         if participant is None:
             raise Exception(f"participant with id {participant_id} is not part of session with {session_id}")
@@ -69,7 +85,7 @@ class SessionService:
         return self.repo.get(session_id)
 
     def set_vote(self, session_id: str, participant_id: str, vote: models.Vote) -> models.Session:
-        participant = self.repo.get_participant(session_id, participant_id)
+        participant = self.repo.get_participant_in_session(session_id, participant_id)
 
         if participant is None:
             raise Exception(f"participant with id {participant_id} is not part of session with {session_id}")
@@ -109,3 +125,11 @@ class SessionService:
         self.repo.delete_session(session_id)
 
         return session
+
+    def participant(self, user_id: str) -> models.Participant:
+        participant = self.repo.get_participant(user_id)
+
+        if participant is None:
+            raise Exception(f"participant with id {user_id} was not found")
+
+        return participant

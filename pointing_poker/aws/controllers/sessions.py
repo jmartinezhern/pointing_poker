@@ -6,21 +6,18 @@ from pointing_poker.models import models
 def create_session(event, _):
     payload = event['sessionDescription']
 
-    reviewing_issue = payload['reviewingIssue']
-
     session_description = models.SessionDescription(
         name=payload['name'],
         pointingMax=payload['pointingMax'],
         pointingMin=payload['pointingMin'],
-        reviewingIssue=models.ReviewingIssue(
-            title=reviewing_issue['title'],
-            description=reviewing_issue['description'],
-            url=reviewing_issue['url']
-        )
+    )
+
+    moderator_description = models.ParticipantDescription(
+        name=event['moderator']['name']
     )
 
     return session_service.SessionService(session_repo.SessionsDynamoDBRepo()).create_session(
-        session_description).to_json()
+        session_description, moderator_description).to_json()
 
 
 def session(event, _):
@@ -80,3 +77,9 @@ def set_reviewing_issue(event, _):
 
     return session_service.SessionService(session_repo.SessionsDynamoDBRepo()).set_reviewing_issue(session_id,
                                                                                                    issue).to_json()
+
+
+def participant(event, _):
+    user_id = event['id']
+
+    return session_service.SessionService(session_repo.SessionsDynamoDBRepo()).participant(user_id).to_json()

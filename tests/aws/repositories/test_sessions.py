@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import uuid4
 
 import unittest
@@ -14,12 +15,8 @@ def session_factory() -> models.Session:
         name='test',
         pointingMax=0,
         pointingMin=1,
-        reviewingIssue=models.ReviewingIssue(
-            title='issue title',
-            description='work to do',
-            url='example.com'
-        ),
         votingStarted=False,
+        createdAt=str(datetime.utcnow()),
         expiration=86400  # 24 hours in seconds
     )
 
@@ -59,17 +56,6 @@ def create_sessions_table(db):
 
 class SessionsRepositoryTestCase(unittest.TestCase):
 
-    def assert_session_equal_db_item(self, item, session):
-        self.assertEqual(item['sessionID'], session.id)
-        self.assertEqual(item['id'], session.id)
-        self.assertEqual(item['pointingMax'], session.pointingMax)
-        self.assertEqual(item['pointingMin'], session.pointingMin)
-        self.assertEqual(item['reviewingIssueTitle'], session.reviewingIssue.title)
-        self.assertEqual(item['reviewingIssueURL'], session.reviewingIssue.url)
-        self.assertEqual(item['reviewingIssueDescription'], session.reviewingIssue.description)
-        self.assertEqual(item['expiration'], session.expiration)
-        self.assertEqual(item['votingStarted'], session.votingStarted)
-
     @mock_dynamodb2
     def test_create_session(self):
         from pointing_poker.aws.repositories import sessions
@@ -83,12 +69,8 @@ class SessionsRepositoryTestCase(unittest.TestCase):
             name='test',
             pointingMax=0,
             pointingMin=1,
-            reviewingIssue=models.ReviewingIssue(
-                title='issue title',
-                description='work to do',
-                url='example.com'
-            ),
             votingStarted=False,
+            createdAt=str(datetime.utcnow()),
             expiration=86400  # 24 hours in seconds
         )
 
@@ -101,7 +83,12 @@ class SessionsRepositoryTestCase(unittest.TestCase):
             }
         )
 
-        self.assert_session_equal_db_item(record['Item'], session)
+        self.assertEqual(record['Item']['sessionID'], session.id)
+        self.assertEqual(record['Item']['id'], session.id)
+        self.assertEqual(record['Item']['pointingMax'], session.pointingMax)
+        self.assertEqual(record['Item']['pointingMin'], session.pointingMin)
+        self.assertEqual(record['Item']['expiration'], session.expiration)
+        self.assertEqual(record['Item']['votingStarted'], session.votingStarted)
 
     @mock_dynamodb2
     def test_get_session(self):
@@ -111,19 +98,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
 
         repo = sessions.SessionsDynamoDBRepo()
 
-        session = models.Session(
-            id=str(uuid4()),
-            name='test',
-            pointingMax=0,
-            pointingMin=1,
-            reviewingIssue=models.ReviewingIssue(
-                title='issue title',
-                description='work to do',
-                url='example.com'
-            ),
-            votingStarted=False,
-            expiration=86400  # 24 hours in seconds
-        )
+        session = session_factory()
 
         repo.create(session)
 
@@ -139,19 +114,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
 
         repo = sessions.SessionsDynamoDBRepo()
 
-        session = models.Session(
-            id=str(uuid4()),
-            name='test',
-            pointingMax=0,
-            pointingMin=1,
-            reviewingIssue=models.ReviewingIssue(
-                title='issue title',
-                description='work to do',
-                url='example.com'
-            ),
-            votingStarted=False,
-            expiration=86400  # 24 hours in seconds
-        )
+        session = session_factory()
 
         repo.create(session)
 
@@ -160,8 +123,6 @@ class SessionsRepositoryTestCase(unittest.TestCase):
         repo.delete_session(session.id)
 
         self.assertEqual(repo.get(session.id), None)
-
-
 
     @mock_dynamodb2
     def test_get_missing_session(self):
@@ -204,7 +165,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
         self.assertEqual(record['Item']['isModerator'], participant.isModerator)
 
     @mock_dynamodb2
-    def test_get_participant(self):
+    def test_get_participant_in_session(self):
         from pointing_poker.aws.repositories import sessions
 
         create_sessions_table(boto3.resource('dynamodb'))
@@ -224,7 +185,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
 
         repo.add_participant(session.id, participant)
 
-        self.assertEqual(participant, repo.get_participant(session.id, participant.id))
+        self.assertEqual(participant, repo.get_participant_in_session(session.id, participant.id))
 
     @mock_dynamodb2
     def test_get_missing_participant(self):
@@ -238,7 +199,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
 
         repo.create(session)
 
-        self.assertIsNone(repo.get_participant(session.id, 'bogus'))
+        self.assertIsNone(repo.get_participant_in_session(session.id, 'bogus'))
 
     @mock_dynamodb2
     def test_remove_participant(self):
@@ -319,9 +280,9 @@ class SessionsRepositoryTestCase(unittest.TestCase):
 
         repo.add_participant(session.id, participant)
 
-        repo.set_vote(session.id, 'bogus', models.Vote(points=5, abstained=False))
+        repo.set_vote(session.id, participant.id, models.Vote(points=5, abstained=False))
 
-        participant = repo.get_participant(session.id, participant.id)
+        participant = repo.get_participant_in_session(session.id, participant.id)
 
         self.assertEqual(participant.vote.points, 5)
         self.assertEqual(participant.vote.abstained, False)
@@ -355,7 +316,6 @@ class SessionsRepositoryTestCase(unittest.TestCase):
         self.assertEqual(item['Item']['reviewingIssueTitle'], 'My Issue')
         self.assertEqual(item['Item']['reviewingIssueDescription'], 'Work to do')
         self.assertEqual(item['Item']['reviewingIssueURL'], 'https://example.com')
-
 
     @mock_dynamodb2
     def test_set_voting_state(self):

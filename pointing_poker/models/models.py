@@ -25,6 +25,18 @@ class Participant:
     isModerator: bool
     vote: Vote
 
+    def to_json(self):
+        self_dict = self.__dict__
+
+        self_dict['vote'] = self.vote.__dict__
+
+        return self_dict
+
+
+@dataclass
+class ParticipantDescription:
+    name: str
+
 
 @dataclass
 class Session:
@@ -33,16 +45,22 @@ class Session:
     pointingMax: int
     pointingMin: int
     expiration: int
-    reviewingIssue: ReviewingIssue
     votingStarted: bool
 
     participants: List[Participant] = field(default_factory=list)
 
     createdAt: str = ''
+    reviewingIssue: Optional[ReviewingIssue] = None
 
     def to_json(self):
         self_dict = self.__dict__
-        self_dict['reviewingIssue'] = self.reviewingIssue.to_json()
+
+        if self.reviewingIssue is not None:
+            self_dict['reviewingIssue'] = self.reviewingIssue.to_json()
+
+        if self.participants:
+            self_dict['participants'] = [participant.to_json() for participant in self.participants]
+
         return self_dict
 
 
@@ -51,7 +69,6 @@ class SessionDescription:
     name: str
     pointingMax: int
     pointingMin: int
-    reviewingIssue: ReviewingIssue
 
 
 @dataclass
@@ -61,6 +78,6 @@ class ParticipantDescription:
 
 @dataclass
 class ReviewingIssueDescription:
-    title: str
-    url: Optional[str]
-    description: Optional[str]
+    title: Optional[str] = None
+    url: Optional[str] = None
+    description: Optional[str] = None
