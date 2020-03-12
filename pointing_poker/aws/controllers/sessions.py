@@ -40,6 +40,14 @@ def join_session(event, _):
         session_id, participant_description).to_json()
 
 
+def leave_session(event, _):
+    session_id = event['sessionID']
+    participant_id = event['participantID']
+
+    return session_service.SessionService(session_repo.SessionsDynamoDBRepo()).leave_session(session_id,
+                                                                                             participant_id).to_json()
+
+
 def close_session(event, _):
     session_id = event['sessionID']
 

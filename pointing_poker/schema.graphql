@@ -4,17 +4,6 @@ input IssueDescription {
     url: String
 }
 
-type Mutation {
-    createSession(sessionDescription: SessionDescription!, moderator: ParticipantDescription!): Session
-    setReviewingIssue(sessionID: ID!, issue: IssueDescription): Session
-    setVote(sessionID: ID!, participantID: ID!, vote: VoteDescription): Session
-    joinSession(sessionID: ID!, participant: ParticipantDescription): Session
-    leaveSession(sessionID: ID!, participantID: ID!): Session
-    startVoting(sessionID: ID!, durationInSecs: Int): Session
-    stopVoting(sessionID: ID!): Session
-    closeSession(sessionID: ID!): Session
-}
-
 type Participant {
     id: ID!
     name: String!
@@ -26,11 +15,6 @@ type Participant {
 input ParticipantDescription {
     id: ID!
     name: String!
-}
-
-type Query {
-    session(sessionID: ID!): Session
-    participant(id: ID!): Participant
 }
 
 type ReviewingIssue {
@@ -58,20 +42,8 @@ input SessionDescription {
 }
 
 type Subscription {
-    voteWasSet(id: ID!): Session
-        @aws_subscribe(mutations: ["setVote"])
-
-    votingWasStarted(id: ID!): Session
-        @aws_subscribe(mutations: ["startVoting"])
-
-    votingWasStopped(id: ID!): Session
-        @aws_subscribe(mutations: ["stopVoting"])
-
-    participantJoinedSession(id: ID!): Session
-        @aws_subscribe(mutations: ["joinSession"])
-
-    sessionWasClosed(id: ID!): Session
-        @aws_subscribe(mutations: ["closeSession"])
+    sessionStateChanged(id: ID!): Session
+        @aws_subscribe(mutations: ["setReviewingIssue", "setVote", "startVoting", "stopVoting", "joinSession", "leaveSession", "closeSession"])
 }
 
 type Vote {
@@ -82,6 +54,22 @@ type Vote {
 input VoteDescription {
     points: Int
     abstained: Boolean!
+}
+
+type Mutation {
+    createSession(sessionDescription: SessionDescription!, moderator: ParticipantDescription!): Session
+    setReviewingIssue(sessionID: ID!, issue: IssueDescription): Session
+    setVote(sessionID: ID!, participantID: ID!, vote: VoteDescription): Session
+    joinSession(sessionID: ID!, participant: ParticipantDescription): Session
+    leaveSession(sessionID: ID!, participantID: ID!): Session
+    startVoting(sessionID: ID!, durationInSecs: Int): Session
+    stopVoting(sessionID: ID!): Session
+    closeSession(sessionID: ID!): Session
+}
+
+type Query {
+    session(sessionID: ID!): Session
+    participant(id: ID!): Participant
 }
 
 schema {
