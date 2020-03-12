@@ -165,6 +165,32 @@ class SessionsRepositoryTestCase(unittest.TestCase):
         self.assertEqual(record['Item']['isModerator'], participant.isModerator)
 
     @mock_dynamodb2
+    def test_add_participant_conflicts(self):
+        from pointing_poker.aws.repositories import sessions
+
+        create_sessions_table(boto3.resource('dynamodb'))
+
+        repo = sessions.SessionsDynamoDBRepo()
+
+        session = session_factory()
+
+        repo.create(session)
+
+        participant = models.Participant(
+            id=str(uuid4()),
+            name='John',
+            isModerator=True,
+            vote=models.Vote(points=0, abstained=True)
+        )
+
+        repo.add_participant(session.id, participant)
+
+        try:
+            repo.add_participant(session.id, participant)
+        except Exception as err:
+            self.assertEqual(err.args[0], f"participant with id {participant.id} already exists")
+
+    @mock_dynamodb2
     def test_get_participant_in_session(self):
         from pointing_poker.aws.repositories import sessions
 

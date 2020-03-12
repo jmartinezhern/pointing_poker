@@ -144,17 +144,24 @@ class SessionsDynamoDBRepo:
         )
 
     def add_participant(self, session_id: str, participant: models.Participant) -> None:
-        self.table.put_item(
-            Item={
-                'sessionID': session_id,
-                'id': participant.id,
-                'name': participant.name,
-                'isModerator': participant.isModerator,
-                'points': participant.vote.points,
-                'abstained': participant.vote.abstained,
-                'type': 'participant'
-            }
-        )
+        try:
+            self.table.put_item(
+                Item={
+                    'sessionID': session_id,
+                    'id': participant.id,
+                    'name': participant.name,
+                    'isModerator': participant.isModerator,
+                    'points': participant.vote.points,
+                    'abstained': participant.vote.abstained,
+                    'type': 'participant'
+                },
+                ConditionExpression=Attr('id').not_exists()
+            )
+        except ClientError as err:
+            if err.response['Error']['Code'] == 'ConditionalCheckFailedException':
+                raise Exception(f"participant with id {participant.id} already exists")
+            else:
+                raise Exception('failed to put item')
 
     def remove_participant(self, session_id: str, participant_id: str) -> None:
         self.table.delete_item(

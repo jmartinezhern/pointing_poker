@@ -24,6 +24,7 @@ type Participant {
 }
 
 input ParticipantDescription {
+    id: ID!
     name: String!
 }
 
@@ -57,19 +58,19 @@ input SessionDescription {
 }
 
 type Subscription {
-    voteWasSet(sessionID: ID!): Session
+    voteWasSet(id: ID!): Session
         @aws_subscribe(mutations: ["setVote"])
 
-    votingWasStarted(sessionID: ID!): Session
+    votingWasStarted(id: ID!): Session
         @aws_subscribe(mutations: ["startVoting"])
 
-    votingWasStopped(sessionID: ID!): Session
+    votingWasStopped(id: ID!): Session
         @aws_subscribe(mutations: ["stopVoting"])
 
-    participantJoinedSession(sessionID: ID!): Session
+    participantJoinedSession(id: ID!): Session
         @aws_subscribe(mutations: ["joinSession"])
 
-    sessionWasClosed(sessionID: ID!): Session
+    sessionWasClosed(id: ID!): Session
         @aws_subscribe(mutations: ["closeSession"])
 }
 

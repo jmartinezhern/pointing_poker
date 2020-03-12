@@ -13,6 +13,7 @@ def create_session(event, _):
     )
 
     moderator_description = models.ParticipantDescription(
+        id=event['moderator']['id'],
         name=event['moderator']['name']
     )
 
@@ -31,6 +32,7 @@ def join_session(event, _):
     payload = event['participant']
 
     participant_description = models.ParticipantDescription(
+        id=payload['id'],
         name=payload['name']
     )
 

@@ -1,5 +1,5 @@
 from datetime import datetime
-from uuid import uuid4
+from uuid import UUID, uuid4
 from typing import Union
 
 from pointing_poker.models import models
@@ -60,13 +60,15 @@ class SessionService:
         return session
 
     def join_session(self, session_id: str, participant_description: models.ParticipantDescription) -> models.Session:
+        participant_description.id = str(UUID(participant_description.id, version=4))
+
         session: models.Session = self.repo.get(session_id)
 
         if session is None:
             raise Exception(f"session with id {session_id} not found")
 
-        participant = models.Participant(id=str(uuid4()), name=participant_description.name, isModerator=False,
-                                         vote=models.Vote(points=0, abstained=True))
+        participant = models.Participant(id=participant_description.id, name=participant_description.name,
+                                         isModerator=False, vote=models.Vote(points=0, abstained=True))
 
         self.repo.add_participant(session_id, participant)
 

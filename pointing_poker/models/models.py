@@ -35,6 +35,7 @@ class Participant:
 
 @dataclass
 class ParticipantDescription:
+    id: str
     name: str
 
 
@@ -69,11 +70,6 @@ class SessionDescription:
     name: str
     pointingMax: int
     pointingMin: int
-
-
-@dataclass
-class ParticipantDescription:
-    name: str
 
 
 @dataclass
