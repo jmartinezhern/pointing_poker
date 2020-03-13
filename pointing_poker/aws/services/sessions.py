@@ -87,6 +87,11 @@ class SessionService:
         return self.repo.get(session_id)
 
     def set_vote(self, session_id: str, participant_id: str, vote: models.Vote) -> models.Session:
+        session = self.repo.get(session_id)
+
+        if session is None:
+            raise Exception(f"session with id {session_id} not found")
+
         participant = self.repo.get_participant_in_session(session_id, participant_id)
 
         if participant is None:
@@ -94,7 +99,11 @@ class SessionService:
 
         self.repo.set_vote(session_id, participant_id, vote)
 
-        return self.repo.get(session_id)
+        participant_idx = [i for i, value in enumerate(session.participants) if value.id == participant_id][0]
+
+        session.participants[participant_idx].vote = vote
+
+        return session
 
     def start_voting(self, session_id: str) -> models.Session:
         session = self.repo.get(session_id)

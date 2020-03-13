@@ -54,7 +54,7 @@ class SessionsDynamoDBRepo:
             pointingMax=session_item['pointingMax'],
             pointingMin=session_item['pointingMin'],
             expiration=session_item['expiration'],
-            votingStarted=False,
+            votingStarted=session_item['votingStarted'],
             participants=participants
         )
 
