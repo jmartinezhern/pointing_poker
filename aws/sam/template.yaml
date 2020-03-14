@@ -79,6 +79,9 @@ Resources:
               - ReadCapacityUnits: "5"
                 WriteCapacityUnits: "5"
               - Ref: AWS::NoValue
+      TimeToLiveSpecification:
+        AttributeName: 'ttl'
+        Enabled: true
 
   createSessionDataSourceLambda:
     Type: AWS::Serverless::Function

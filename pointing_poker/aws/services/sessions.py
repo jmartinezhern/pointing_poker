@@ -17,13 +17,13 @@ class SessionService:
             pointingMax=description.pointingMax,
             pointingMin=description.pointingMin,
             votingStarted=False,
-            expiration=86400,  # 24 hours in seconds
+            expiration=24*60*60,  # 24 hours in seconds
             participants=[],
             createdAt=str(datetime.utcnow())
         )
 
         session.participants.append(models.Participant(
-            id=str(uuid4()),
+            id=moderator.id,
             name=moderator.name,
             isModerator=True,
             vote=models.Vote(0, True),

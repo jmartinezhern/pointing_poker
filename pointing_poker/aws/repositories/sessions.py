@@ -1,5 +1,6 @@
 from os import environ
 from typing import Union
+from time import time
 
 from botocore.exceptions import ClientError
 from boto3 import resource
@@ -24,6 +25,7 @@ class SessionsDynamoDBRepo:
                 'pointingMin': session.pointingMin,
                 'expiration': session.expiration,
                 'votingStarted': session.votingStarted,
+                'ttl': int(time() + session.expiration),
                 'type': 'session'
             }
         )
@@ -153,6 +155,7 @@ class SessionsDynamoDBRepo:
                     'isModerator': participant.isModerator,
                     'points': participant.vote.points,
                     'abstained': participant.vote.abstained,
+                    'ttl': int(time() + 24*60*60),
                     'type': 'participant'
                 },
                 ConditionExpression=Attr('id').not_exists()
