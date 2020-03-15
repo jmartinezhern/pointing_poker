@@ -49,6 +49,16 @@ class SessionsDynamoDBRepo:
 
         session_item = [item for item in items if item['type'] == 'session'][0]
 
+        issue = models.ReviewingIssue()
+
+        if any(key in session_item for key in
+               ['reviewingIssueTitle', 'reviewingIssueDescription', 'reviewingIssueURL']):
+            issue = models.ReviewingIssue(
+                title=session_item.get('reviewingIssueTitle'),
+                description=session_item.get('reviewingIssueDescription'),
+                url=session_item.get('reviewingIssueURL'),
+            )
+
         session = models.Session(
             id=session_item['sessionID'],
             name=session_item['name'],
@@ -57,16 +67,9 @@ class SessionsDynamoDBRepo:
             pointingMin=session_item['pointingMin'],
             expiration=session_item['expiration'],
             votingStarted=session_item['votingStarted'],
-            participants=participants
+            participants=participants,
+            reviewingIssue=issue,
         )
-
-        if any(key in session_item for key in
-               ['reviewingIssueTitle', 'reviewingIssueDescription', 'reviewingIssueURL']):
-            session.reviewingIssue = models.ReviewingIssue(
-                title=session_item.get('reviewingIssueTitle'),
-                description=session_item.get('reviewingIssueDescription'),
-                url=session_item.get('reviewingIssueURL'),
-            )
 
         return session
 
@@ -155,7 +158,7 @@ class SessionsDynamoDBRepo:
                     'isModerator': participant.isModerator,
                     'points': participant.vote.points,
                     'abstained': participant.vote.abstained,
-                    'ttl': int(time() + 24*60*60),
+                    'ttl': int(time() + 24 * 60 * 60),
                     'type': 'participant'
                 },
                 ConditionExpression=Attr('id').not_exists()

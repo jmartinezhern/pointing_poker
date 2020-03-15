@@ -27,6 +27,12 @@ def session(event, _):
     return session_service.SessionService(session_repo.SessionsDynamoDBRepo()).session(session_id).to_json()
 
 
+def session_state_changed(event, _):
+    session_id = event['id']
+
+    return session_service.SessionService(session_repo.SessionsDynamoDBRepo()).session(session_id).to_json()
+
+
 def join_session(event, _):
     session_id = event['sessionID']
     payload = event['participant']

@@ -18,7 +18,7 @@ input ParticipantDescription {
 }
 
 type ReviewingIssue {
-    title: String!
+    title: String
     url: String
     description: String
 }
@@ -28,7 +28,7 @@ type Session {
     createdAt: String
     participants(after: ID, first: Int): [Participant!]!
     name: String!
-    reviewingIssue: ReviewingIssue
+    reviewingIssue: ReviewingIssue!
     pointingMin: Int!
     pointingMax: Int!
     expiration: Int!

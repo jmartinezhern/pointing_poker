@@ -10,9 +10,9 @@ class Vote:
 
 @dataclass
 class ReviewingIssue:
-    title: str
-    url: str
-    description: str
+    title: Optional[str] = None
+    url: Optional[str] = None
+    description: Optional[str] = None
 
     def to_json(self):
         return self.__dict__
@@ -47,11 +47,11 @@ class Session:
     pointingMin: int
     expiration: int
     votingStarted: bool
+    reviewingIssue: ReviewingIssue
 
     participants: List[Participant] = field(default_factory=list)
 
     createdAt: str = ''
-    reviewingIssue: Optional[ReviewingIssue] = None
 
     def to_json(self):
         self_dict = self.__dict__
