@@ -86,9 +86,9 @@ def set_reviewing_issue(event, _):
     description = event['issue']
 
     issue = models.ReviewingIssueDescription(
-        title=description['title'],
-        description=description['description'],
-        url=description['url']
+        title=description.get('title'),
+        description=description.get('description'),
+        url=description.get('url')
     )
 
     return session_service.SessionService(session_repo.SessionsDynamoDBRepo()).set_reviewing_issue(session_id,
