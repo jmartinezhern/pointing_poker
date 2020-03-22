@@ -18,7 +18,7 @@ class SessionService:
             pointingMin=description.pointingMin,
             votingStarted=False,
             reviewingIssue=models.ReviewingIssue(),
-            expiration=24*60*60*1000,  # 24 hours in seconds
+            expiration=24 * 60 * 60 * 1000,  # 24 hours in seconds
             participants=[],
             createdAt=str(datetime.utcnow())
         )
@@ -27,7 +27,6 @@ class SessionService:
             id=moderator.id,
             name=moderator.name,
             isModerator=True,
-            vote=models.Vote(0, True),
         ))
 
         self.repo.create(session)
@@ -69,7 +68,7 @@ class SessionService:
             raise Exception(f"session with id {session_id} not found")
 
         participant = models.Participant(id=participant_description.id, name=participant_description.name,
-                                         isModerator=False, vote=models.Vote(points=0, abstained=True))
+                                         isModerator=False)
 
         self.repo.add_participant(session_id, participant)
 
@@ -113,6 +112,11 @@ class SessionService:
             raise Exception(f"session with id {session_id} not found")
 
         self.repo.set_voting_state(session_id, True)
+
+        for idx, participant in enumerate(session.participants):
+            if not participant.isModerator:
+                session.participants[idx].vote = None
+                self.repo.set_vote(session_id, participant.id, None)
 
         session.votingStarted = True
 

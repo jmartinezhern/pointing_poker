@@ -9,7 +9,7 @@ type Participant {
     name: String!
     isModerator: Boolean!
     currentSession: Session
-    vote: Vote!
+    vote: Vote
 }
 
 input ParticipantDescription {

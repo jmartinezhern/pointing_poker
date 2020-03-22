@@ -44,7 +44,8 @@ class SessionsDynamoDBRepo:
             id=item['id'],
             name=item['name'],
             isModerator=item['isModerator'],
-            vote=models.Vote(points=item['points'], abstained=item['abstained'])
+            vote=None if 'points' not in item or 'abstained' not in item else models.Vote(points=item['points'],
+                                                                                          abstained=item['abstained'])
         ) for item in items if item['type'] == 'participant']
 
         session_item = [item for item in items if item['type'] == 'session'][0]
@@ -90,7 +91,8 @@ class SessionsDynamoDBRepo:
             id=item['id'],
             name=item['name'],
             isModerator=item['isModerator'],
-            vote=models.Vote(points=item['points'], abstained=item['abstained'])
+            vote=None if 'points' not in item or 'abstained' not in item else models.Vote(points=item['points'],
+                                                                                          abstained=item['abstained'])
         )
 
     def get_participant(self, user_id: str):
@@ -110,7 +112,8 @@ class SessionsDynamoDBRepo:
             id=item['id'],
             name=item['name'],
             isModerator=item['isModerator'],
-            vote=models.Vote(points=item['points'], abstained=item['abstained'])
+            vote=None if 'points' not in item or 'abstained' not in item else models.Vote(points=item['points'],
+                                                                                          abstained=item['abstained'])
         )
 
     def set_reviewing_issue(self, session_id: str, issue: models.ReviewingIssue):
@@ -156,8 +159,6 @@ class SessionsDynamoDBRepo:
                     'id': participant.id,
                     'name': participant.name,
                     'isModerator': participant.isModerator,
-                    'points': participant.vote.points,
-                    'abstained': participant.vote.abstained,
                     'ttl': int(time() + 24 * 60 * 60),
                     'type': 'participant'
                 },
@@ -177,13 +178,24 @@ class SessionsDynamoDBRepo:
             }
         )
 
-    def set_vote(self, session_id: str, participant_id: str, vote: models.Vote) -> None:
+    def set_vote(self, session_id: str, participant_id: str, vote: Union[models.Vote]) -> None:
+
         try:
+            key = {
+                'sessionID': session_id,
+                'id': participant_id,
+            }
+
+            if vote is None:
+                self.table.update_item(
+                    Key=key,
+                    ConditionExpression=Attr('id').eq(participant_id),
+                    UpdateExpression='REMOVE points, abstained',
+                )
+                return
+
             self.table.update_item(
-                Key={
-                    'sessionID': session_id,
-                    'id': participant_id,
-                },
+                Key=key,
                 ConditionExpression=Attr('id').eq(participant_id),
                 UpdateExpression='SET points = :points, abstained = :abstained',
                 ExpressionAttributeValues={

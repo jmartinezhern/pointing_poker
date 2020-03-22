@@ -17,6 +17,7 @@ def session_factory() -> models.Session:
         pointingMin=1,
         votingStarted=False,
         createdAt=str(datetime.utcnow()),
+        reviewingIssue=models.ReviewingIssue(),
         expiration=86400  # 24 hours in seconds
     )
 
@@ -71,6 +72,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
             pointingMin=1,
             votingStarted=False,
             createdAt=str(datetime.utcnow()),
+            reviewingIssue=models.ReviewingIssue(),
             expiration=86400  # 24 hours in seconds
         )
 
@@ -206,7 +208,6 @@ class SessionsRepositoryTestCase(unittest.TestCase):
             id=str(uuid4()),
             name='John',
             isModerator=True,
-            vote=models.Vote(points=0, abstained=True)
         )
 
         repo.add_participant(session.id, participant)
@@ -276,7 +277,6 @@ class SessionsRepositoryTestCase(unittest.TestCase):
             id=str(uuid4()),
             name='John',
             isModerator=True,
-            vote=models.Vote(points=0, abstained=True)
         )
 
         repo.add_participant(session.id, participant)

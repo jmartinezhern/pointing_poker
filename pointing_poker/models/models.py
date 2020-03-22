@@ -23,12 +23,14 @@ class Participant:
     id: str
     name: str
     isModerator: bool
-    vote: Vote
+
+    vote: Optional[Vote] = None
 
     def to_json(self):
         self_dict = self.__dict__
 
-        self_dict['vote'] = self.vote.__dict__
+        if self.vote is not None:
+            self_dict['vote'] = self.vote.__dict__
 
         return self_dict
 
