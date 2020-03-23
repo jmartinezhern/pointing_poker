@@ -18,7 +18,7 @@ class SessionService:
             pointingMin=description.pointingMin,
             votingStarted=False,
             reviewingIssue=models.ReviewingIssue(),
-            expiration=24 * 60 * 60 * 1000,  # 24 hours in seconds
+            expiration=24 * 60 * 60,  # 24 hours in seconds
             participants=[],
             createdAt=str(datetime.utcnow())
         )

@@ -159,7 +159,7 @@ class SessionsDynamoDBRepo:
                     'id': participant.id,
                     'name': participant.name,
                     'isModerator': participant.isModerator,
-                    'ttl': int(time() + 24 * 60 * 60),
+                    'ttl': int(time() + (24 * 60 * 60)),
                     'type': 'participant'
                 },
                 ConditionExpression=Attr('id').not_exists()
