@@ -1,5 +1,6 @@
 from datetime import datetime
-from uuid import UUID, uuid4
+from uuid import UUID
+from shortuuid import uuid
 from typing import Union
 
 from pointing_poker.models import models
@@ -12,7 +13,7 @@ class SessionService:
     def create_session(self, description: models.SessionDescription,
                        moderator: models.ParticipantDescription) -> models.Session:
         session = models.Session(
-            id=str(uuid4()),
+            id=str(uuid()),
             name=description.name,
             pointingMax=description.pointingMax,
             pointingMin=description.pointingMin,
