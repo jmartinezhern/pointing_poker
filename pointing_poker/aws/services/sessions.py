@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta
 from time import time
 from uuid import UUID
 from shortuuid import uuid
@@ -32,13 +31,13 @@ class SessionService:
         )
 
         session.participants.append(
-            models.Participant(id=moderator.id, name=moderator.name, isModerator=True,)
+            models.Participant(id=moderator.id, name=moderator.name, isModerator=True)
         )
 
-        self.repo.create(session)
+        self.repo.create(session, record_expiration=session.expiresIn)
 
         self.repo.add_participant(
-            session.id, session.participants[0], record_expiration=today_plus_day
+            session.id, session.participants[0], record_expiration=session.expiresIn
         )
 
         return session

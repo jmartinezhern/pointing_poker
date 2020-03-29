@@ -29,7 +29,7 @@ class SessionsDynamoDBRepo:
                 "pointingMin": session.pointingMin,
                 "expiresIn": session.expiresIn,
                 "votingStarted": session.votingStarted,
-                "ttl": int(time() + record_expiration),
+                "ttl": record_expiration,
                 "type": "session",
             }
         )
