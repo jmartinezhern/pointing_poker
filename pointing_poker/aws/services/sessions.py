@@ -17,7 +17,7 @@ class SessionService:
         moderator: models.ParticipantDescription,
     ) -> models.Session:
 
-        today_plus_day = int(time() + 24 * 60 * 60)
+        today_plus_day = int(time() + (24 * 60 * 60))
 
         session = models.Session(
             id=str(uuid()),
