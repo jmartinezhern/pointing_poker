@@ -25,13 +25,13 @@ type ReviewingIssue {
 
 type Session {
     id: ID!
-    createdAt: String
+    createdAt: Int!
     participants(after: ID, first: Int): [Participant!]!
     name: String!
     reviewingIssue: ReviewingIssue!
     pointingMin: Int!
     pointingMax: Int!
-    expiration: Int!
+    expiresIn: Int!
     votingStarted: Boolean!
 }
 

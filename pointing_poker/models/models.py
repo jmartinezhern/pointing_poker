@@ -47,13 +47,13 @@ class Session:
     name: str
     pointingMax: int
     pointingMin: int
-    expiration: int
     votingStarted: bool
     reviewingIssue: ReviewingIssue
 
     participants: List[Participant] = field(default_factory=list)
 
-    createdAt: str = ''
+    createdAt: int = 0
+    expiresIn: int = 0
 
     def to_json(self):
         self_dict = self.__dict__

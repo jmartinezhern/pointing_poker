@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+from time import time
 from uuid import UUID
 from shortuuid import uuid
 from typing import Union
@@ -12,6 +13,9 @@ class SessionService:
 
     def create_session(self, description: models.SessionDescription,
                        moderator: models.ParticipantDescription) -> models.Session:
+
+        today_plus_day = int(time() + 24 * 60 * 60)
+
         session = models.Session(
             id=str(uuid()),
             name=description.name,
@@ -19,9 +23,9 @@ class SessionService:
             pointingMin=description.pointingMin,
             votingStarted=False,
             reviewingIssue=models.ReviewingIssue(),
-            expiration=24 * 60 * 60,  # 24 hours in seconds
             participants=[],
-            createdAt=str(datetime.utcnow())
+            createdAt=int(time()),
+            expiresIn=today_plus_day,
         )
 
         session.participants.append(models.Participant(
@@ -32,7 +36,7 @@ class SessionService:
 
         self.repo.create(session)
 
-        self.repo.add_participant(session.id, session.participants[0])
+        self.repo.add_participant(session.id, session.participants[0], record_expiration=today_plus_day)
 
         return session
 
@@ -71,7 +75,7 @@ class SessionService:
         participant = models.Participant(id=participant_description.id, name=participant_description.name,
                                          isModerator=False)
 
-        self.repo.add_participant(session_id, participant)
+        self.repo.add_participant(session_id, participant, record_expiration=session.expiresIn)
 
         session.participants.append(participant)
 

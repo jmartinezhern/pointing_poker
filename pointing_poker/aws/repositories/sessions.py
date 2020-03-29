@@ -14,7 +14,7 @@ class SessionsDynamoDBRepo:
         self.db = resource('dynamodb')
         self.table = self.db.Table(environ['SESSIONS_TABLE_NAME'] if 'SESSIONS_TABLE_NAME' in environ else 'sessions')
 
-    def create(self, session: models.Session) -> None:
+    def create(self, session: models.Session, record_expiration=0) -> None:
         self.table.put_item(
             Item={
                 'id': session.id,
@@ -23,9 +23,9 @@ class SessionsDynamoDBRepo:
                 'name': session.name,
                 'pointingMax': session.pointingMax,
                 'pointingMin': session.pointingMin,
-                'expiration': session.expiration,
+                'expiresIn': session.expiresIn,
                 'votingStarted': session.votingStarted,
-                'ttl': int(time() + session.expiration),
+                'ttl': int(time() + record_expiration),
                 'type': 'session'
             }
         )
@@ -66,7 +66,7 @@ class SessionsDynamoDBRepo:
             createdAt=session_item['createdAt'],
             pointingMax=session_item['pointingMax'],
             pointingMin=session_item['pointingMin'],
-            expiration=session_item['expiration'],
+            expiresIn=session_item['expiresIn'],
             votingStarted=session_item['votingStarted'],
             participants=participants,
             reviewingIssue=issue,
@@ -151,7 +151,7 @@ class SessionsDynamoDBRepo:
             }
         )
 
-    def add_participant(self, session_id: str, participant: models.Participant) -> None:
+    def add_participant(self, session_id: str, participant: models.Participant, record_expiration=0) -> None:
         try:
             self.table.put_item(
                 Item={
@@ -159,7 +159,7 @@ class SessionsDynamoDBRepo:
                     'id': participant.id,
                     'name': participant.name,
                     'isModerator': participant.isModerator,
-                    'ttl': int(time() + (24 * 60 * 60)),
+                    'ttl': record_expiration,
                     'type': 'participant'
                 },
                 ConditionExpression=Attr('id').not_exists()
