@@ -1,4 +1,4 @@
-from datetime import datetime
+from time import time
 from uuid import uuid4
 
 import unittest
@@ -16,9 +16,9 @@ def session_factory() -> models.Session:
         pointingMax=0,
         pointingMin=1,
         votingStarted=False,
-        createdAt=str(datetime.utcnow()),
+        createdAt=int(time()),
+        expiresIn=int(time() + 24 * 60 * 60),
         reviewingIssue=models.ReviewingIssue(),
-        expiration=86400,  # 24 hours in seconds
     )
 
 
@@ -61,9 +61,9 @@ class SessionsRepositoryTestCase(unittest.TestCase):
             pointingMax=0,
             pointingMin=1,
             votingStarted=False,
-            createdAt=str(datetime.utcnow()),
+            createdAt=int(time()),
+            expiresIn=int(time() + 24 * 60 * 60),
             reviewingIssue=models.ReviewingIssue(),
-            expiration=86400,  # 24 hours in seconds
         )
 
         repo.create(session)
@@ -74,7 +74,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
         self.assertEqual(record["Item"]["id"], session.id)
         self.assertEqual(record["Item"]["pointingMax"], session.pointingMax)
         self.assertEqual(record["Item"]["pointingMin"], session.pointingMin)
-        self.assertEqual(record["Item"]["expiration"], session.expiration)
+        self.assertEqual(record["Item"]["expiresIn"], session.expiresIn)
         self.assertEqual(record["Item"]["votingStarted"], session.votingStarted)
 
     @mock_dynamodb2
