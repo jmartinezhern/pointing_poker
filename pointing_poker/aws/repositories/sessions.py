@@ -93,7 +93,7 @@ class SessionsDynamoDBRepo:
         self, session_id: str, participant_id: str
     ) -> Union[models.Participant, None]:
         record = self.table.get_item(
-            Key={"sessionID": session_id, "id": participant_id,}
+            Key={"sessionID": session_id, "id": participant_id}
         )
 
         if "Item" not in record:
@@ -133,7 +133,7 @@ class SessionsDynamoDBRepo:
 
     def set_reviewing_issue(self, session_id: str, issue: models.ReviewingIssue):
         self.table.update_item(
-            Key={"sessionID": session_id, "id": session_id,},
+            Key={"sessionID": session_id, "id": session_id},
             UpdateExpression="SET reviewingIssueTitle = :title, "
             "reviewingIssueDescription = :description, reviewingIssueURL = :url",
             ExpressionAttributeValues={
@@ -145,9 +145,9 @@ class SessionsDynamoDBRepo:
 
     def set_voting_state(self, session_id: str, value: bool) -> None:
         self.table.update_item(
-            Key={"sessionID": session_id, "id": session_id,},
+            Key={"sessionID": session_id, "id": session_id},
             UpdateExpression="SET votingStarted = :value",
-            ExpressionAttributeValues={":value": value,},
+            ExpressionAttributeValues={":value": value},
         )
 
     def delete_session(self, session_id) -> None:
