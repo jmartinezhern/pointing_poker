@@ -11,97 +11,111 @@ from pointing_poker.models import models
 
 class SessionsDynamoDBRepo:
     def __init__(self):
-        self.db = resource('dynamodb')
-        self.table = self.db.Table(environ['SESSIONS_TABLE_NAME'] if 'SESSIONS_TABLE_NAME' in environ else 'sessions')
+        self.db = resource("dynamodb")
+        self.table = self.db.Table(
+            environ["SESSIONS_TABLE_NAME"]
+            if "SESSIONS_TABLE_NAME" in environ
+            else "sessions"
+        )
 
     def create(self, session: models.Session, record_expiration=0) -> None:
         self.table.put_item(
             Item={
-                'id': session.id,
-                'sessionID': session.id,
-                'createdAt': session.createdAt,
-                'name': session.name,
-                'pointingMax': session.pointingMax,
-                'pointingMin': session.pointingMin,
-                'expiresIn': session.expiresIn,
-                'votingStarted': session.votingStarted,
-                'ttl': int(time() + record_expiration),
-                'type': 'session'
+                "id": session.id,
+                "sessionID": session.id,
+                "createdAt": session.createdAt,
+                "name": session.name,
+                "pointingMax": session.pointingMax,
+                "pointingMin": session.pointingMin,
+                "expiresIn": session.expiresIn,
+                "votingStarted": session.votingStarted,
+                "ttl": int(time() + record_expiration),
+                "type": "session",
             }
         )
 
     def get(self, session_id: str) -> Union[models.Session, None]:
         records = self.table.query(
-            KeyConditionExpression=Key('sessionID').eq(session_id)
+            KeyConditionExpression=Key("sessionID").eq(session_id)
         )
 
-        items = records['Items']
+        items = records["Items"]
 
         if not items:
             return None
 
-        participants = [models.Participant(
-            id=item['id'],
-            name=item['name'],
-            isModerator=item['isModerator'],
-            vote=None if 'points' not in item or 'abstained' not in item else models.Vote(points=item['points'],
-                                                                                          abstained=item['abstained'])
-        ) for item in items if item['type'] == 'participant']
+        participants = [
+            models.Participant(
+                id=item["id"],
+                name=item["name"],
+                isModerator=item["isModerator"],
+                vote=None
+                if "points" not in item or "abstained" not in item
+                else models.Vote(points=item["points"], abstained=item["abstained"]),
+            )
+            for item in items
+            if item["type"] == "participant"
+        ]
 
-        session_item = [item for item in items if item['type'] == 'session'][0]
+        session_item = [item for item in items if item["type"] == "session"][0]
 
         issue = models.ReviewingIssue()
 
-        if any(key in session_item for key in
-               ['reviewingIssueTitle', 'reviewingIssueDescription', 'reviewingIssueURL']):
+        if any(
+            key in session_item
+            for key in [
+                "reviewingIssueTitle",
+                "reviewingIssueDescription",
+                "reviewingIssueURL",
+            ]
+        ):
             issue = models.ReviewingIssue(
-                title=session_item.get('reviewingIssueTitle'),
-                description=session_item.get('reviewingIssueDescription'),
-                url=session_item.get('reviewingIssueURL'),
+                title=session_item.get("reviewingIssueTitle"),
+                description=session_item.get("reviewingIssueDescription"),
+                url=session_item.get("reviewingIssueURL"),
             )
 
         session = models.Session(
-            id=session_item['sessionID'],
-            name=session_item['name'],
-            createdAt=session_item['createdAt'],
-            pointingMax=session_item['pointingMax'],
-            pointingMin=session_item['pointingMin'],
-            expiresIn=session_item['expiresIn'],
-            votingStarted=session_item['votingStarted'],
+            id=session_item["sessionID"],
+            name=session_item["name"],
+            createdAt=session_item["createdAt"],
+            pointingMax=session_item["pointingMax"],
+            pointingMin=session_item["pointingMin"],
+            expiresIn=session_item["expiresIn"],
+            votingStarted=session_item["votingStarted"],
             participants=participants,
             reviewingIssue=issue,
         )
 
         return session
 
-    def get_participant_in_session(self, session_id: str, participant_id: str) -> Union[models.Participant, None]:
+    def get_participant_in_session(
+        self, session_id: str, participant_id: str
+    ) -> Union[models.Participant, None]:
         record = self.table.get_item(
-            Key={
-                'sessionID': session_id,
-                'id': participant_id,
-            }
+            Key={"sessionID": session_id, "id": participant_id,}
         )
 
-        if 'Item' not in record:
+        if "Item" not in record:
             return None
 
-        item = record['Item']
+        item = record["Item"]
 
         return models.Participant(
-            id=item['id'],
-            name=item['name'],
-            isModerator=item['isModerator'],
-            vote=None if 'points' not in item or 'abstained' not in item else models.Vote(points=item['points'],
-                                                                                          abstained=item['abstained'])
+            id=item["id"],
+            name=item["name"],
+            isModerator=item["isModerator"],
+            vote=None
+            if "points" not in item or "abstained" not in item
+            else models.Vote(points=item["points"], abstained=item["abstained"]),
         )
 
     def get_participant(self, user_id: str):
         records = self.table.query(
-            IndexName='id-index',
-            KeyConditionExpression=Key('id').eq(user_id)
+            IndexName="id-index", KeyConditionExpression=Key("id").eq(user_id)
         )
 
-        items = records['Items']
+        items = records["Items"]
 
         if not items:
             return None
@@ -109,102 +123,89 @@ class SessionsDynamoDBRepo:
         item = items[0]
 
         return models.Participant(
-            id=item['id'],
-            name=item['name'],
-            isModerator=item['isModerator'],
-            vote=None if 'points' not in item or 'abstained' not in item else models.Vote(points=item['points'],
-                                                                                          abstained=item['abstained'])
+            id=item["id"],
+            name=item["name"],
+            isModerator=item["isModerator"],
+            vote=None
+            if "points" not in item or "abstained" not in item
+            else models.Vote(points=item["points"], abstained=item["abstained"]),
         )
 
     def set_reviewing_issue(self, session_id: str, issue: models.ReviewingIssue):
         self.table.update_item(
-            Key={
-                'sessionID': session_id,
-                'id': session_id,
-            },
+            Key={"sessionID": session_id, "id": session_id,},
             UpdateExpression="SET reviewingIssueTitle = :title, "
-                             "reviewingIssueDescription = :description, reviewingIssueURL = :url",
+            "reviewingIssueDescription = :description, reviewingIssueURL = :url",
             ExpressionAttributeValues={
-                ':title': issue.title,
-                ':description': issue.description,
-                ':url': issue.url,
-            }
+                ":title": issue.title,
+                ":description": issue.description,
+                ":url": issue.url,
+            },
         )
 
     def set_voting_state(self, session_id: str, value: bool) -> None:
         self.table.update_item(
-            Key={
-                'sessionID': session_id,
-                'id': session_id,
-            },
-            UpdateExpression='SET votingStarted = :value',
-            ExpressionAttributeValues={
-                ':value': value,
-            }
+            Key={"sessionID": session_id, "id": session_id,},
+            UpdateExpression="SET votingStarted = :value",
+            ExpressionAttributeValues={":value": value,},
         )
 
     def delete_session(self, session_id) -> None:
-        self.table.delete_item(
-            Key={
-                'sessionID': session_id,
-                'id': session_id
-            }
-        )
+        self.table.delete_item(Key={"sessionID": session_id, "id": session_id})
 
-    def add_participant(self, session_id: str, participant: models.Participant, record_expiration=0) -> None:
+    def add_participant(
+        self, session_id: str, participant: models.Participant, record_expiration=0
+    ) -> None:
         try:
             self.table.put_item(
                 Item={
-                    'sessionID': session_id,
-                    'id': participant.id,
-                    'name': participant.name,
-                    'isModerator': participant.isModerator,
-                    'ttl': record_expiration,
-                    'type': 'participant'
+                    "sessionID": session_id,
+                    "id": participant.id,
+                    "name": participant.name,
+                    "isModerator": participant.isModerator,
+                    "ttl": record_expiration,
+                    "type": "participant",
                 },
-                ConditionExpression=Attr('id').not_exists()
+                ConditionExpression=Attr("id").not_exists(),
             )
         except ClientError as err:
-            if err.response['Error']['Code'] == 'ConditionalCheckFailedException':
+            if err.response["Error"]["Code"] == "ConditionalCheckFailedException":
                 raise Exception(f"participant with id {participant.id} already exists")
             else:
-                raise Exception('failed to put item')
+                raise Exception("failed to put item")
 
     def remove_participant(self, session_id: str, participant_id: str) -> None:
-        self.table.delete_item(
-            Key={
-                'sessionID': session_id,
-                'id': participant_id
-            }
-        )
+        self.table.delete_item(Key={"sessionID": session_id, "id": participant_id})
 
-    def set_vote(self, session_id: str, participant_id: str, vote: Union[models.Vote]) -> None:
+    def set_vote(
+        self, session_id: str, participant_id: str, vote: Union[models.Vote]
+    ) -> None:
 
         try:
             key = {
-                'sessionID': session_id,
-                'id': participant_id,
+                "sessionID": session_id,
+                "id": participant_id,
             }
 
             if vote is None:
                 self.table.update_item(
                     Key=key,
-                    ConditionExpression=Attr('id').eq(participant_id),
-                    UpdateExpression='REMOVE points, abstained',
+                    ConditionExpression=Attr("id").eq(participant_id),
+                    UpdateExpression="REMOVE points, abstained",
                 )
                 return
 
             self.table.update_item(
                 Key=key,
-                ConditionExpression=Attr('id').eq(participant_id),
-                UpdateExpression='SET points = :points, abstained = :abstained',
+                ConditionExpression=Attr("id").eq(participant_id),
+                UpdateExpression="SET points = :points, abstained = :abstained",
                 ExpressionAttributeValues={
-                    ':abstained': vote.abstained,
-                    ':points': vote.points
-                }
+                    ":abstained": vote.abstained,
+                    ":points": vote.points,
+                },
             )
         except ClientError as err:
-            if err.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                raise Exception('resource not found')
+            if err.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                raise Exception("resource not found")
             else:
-                raise Exception('failed to update item')
+                raise Exception("failed to update item")

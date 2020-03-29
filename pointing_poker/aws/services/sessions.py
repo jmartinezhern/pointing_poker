@@ -11,8 +11,11 @@ class SessionService:
     def __init__(self, repo):
         self.repo = repo
 
-    def create_session(self, description: models.SessionDescription,
-                       moderator: models.ParticipantDescription) -> models.Session:
+    def create_session(
+        self,
+        description: models.SessionDescription,
+        moderator: models.ParticipantDescription,
+    ) -> models.Session:
 
         today_plus_day = int(time() + 24 * 60 * 60)
 
@@ -28,28 +31,28 @@ class SessionService:
             expiresIn=today_plus_day,
         )
 
-        session.participants.append(models.Participant(
-            id=moderator.id,
-            name=moderator.name,
-            isModerator=True,
-        ))
+        session.participants.append(
+            models.Participant(id=moderator.id, name=moderator.name, isModerator=True,)
+        )
 
         self.repo.create(session)
 
-        self.repo.add_participant(session.id, session.participants[0], record_expiration=today_plus_day)
+        self.repo.add_participant(
+            session.id, session.participants[0], record_expiration=today_plus_day
+        )
 
         return session
 
-    def set_reviewing_issue(self, session_id: str, issue: models.ReviewingIssueDescription) -> models.Session:
+    def set_reviewing_issue(
+        self, session_id: str, issue: models.ReviewingIssueDescription
+    ) -> models.Session:
         session = self.repo.get(session_id)
 
         if session is None:
             raise Exception(f"session with id {session_id} not found")
 
         session.reviewingIssue = models.ReviewingIssue(
-            title=issue.title,
-            description=issue.description,
-            url=issue.url,
+            title=issue.title, description=issue.description, url=issue.url,
         )
 
         self.repo.set_reviewing_issue(session_id, session.reviewingIssue)
@@ -64,7 +67,9 @@ class SessionService:
 
         return session
 
-    def join_session(self, session_id: str, participant_description: models.ParticipantDescription) -> models.Session:
+    def join_session(
+        self, session_id: str, participant_description: models.ParticipantDescription
+    ) -> models.Session:
         participant_description.id = str(UUID(participant_description.id, version=4))
 
         session: models.Session = self.repo.get(session_id)
@@ -72,10 +77,15 @@ class SessionService:
         if session is None:
             raise Exception(f"session with id {session_id} not found")
 
-        participant = models.Participant(id=participant_description.id, name=participant_description.name,
-                                         isModerator=False)
+        participant = models.Participant(
+            id=participant_description.id,
+            name=participant_description.name,
+            isModerator=False,
+        )
 
-        self.repo.add_participant(session_id, participant, record_expiration=session.expiresIn)
+        self.repo.add_participant(
+            session_id, participant, record_expiration=session.expiresIn
+        )
 
         session.participants.append(participant)
 
@@ -85,13 +95,17 @@ class SessionService:
         participant = self.repo.get_participant_in_session(session_id, participant_id)
 
         if participant is None:
-            raise Exception(f"participant with id {participant_id} is not part of session with {session_id}")
+            raise Exception(
+                f"participant with id {participant_id} is not part of session with {session_id}"
+            )
 
         self.repo.remove_participant(session_id, participant_id)
 
         return self.repo.get(session_id)
 
-    def set_vote(self, session_id: str, participant_id: str, vote: models.Vote) -> models.Session:
+    def set_vote(
+        self, session_id: str, participant_id: str, vote: models.Vote
+    ) -> models.Session:
         session = self.repo.get(session_id)
 
         if session is None:
@@ -100,11 +114,17 @@ class SessionService:
         participant = self.repo.get_participant_in_session(session_id, participant_id)
 
         if participant is None:
-            raise Exception(f"participant with id {participant_id} is not part of session with {session_id}")
+            raise Exception(
+                f"participant with id {participant_id} is not part of session with {session_id}"
+            )
 
         self.repo.set_vote(session_id, participant_id, vote)
 
-        participant_idx = [i for i, value in enumerate(session.participants) if value.id == participant_id][0]
+        participant_idx = [
+            i
+            for i, value in enumerate(session.participants)
+            if value.id == participant_id
+        ][0]
 
         session.participants[participant_idx].vote = vote
 

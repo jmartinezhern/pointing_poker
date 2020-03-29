@@ -30,7 +30,7 @@ class Participant:
         self_dict = self.__dict__
 
         if self.vote is not None:
-            self_dict['vote'] = self.vote.__dict__
+            self_dict["vote"] = self.vote.__dict__
 
         return self_dict
 
@@ -59,10 +59,12 @@ class Session:
         self_dict = self.__dict__
 
         if self.reviewingIssue is not None:
-            self_dict['reviewingIssue'] = self.reviewingIssue.to_json()
+            self_dict["reviewingIssue"] = self.reviewingIssue.to_json()
 
         if self.participants:
-            self_dict['participants'] = [participant.to_json() for participant in self.participants]
+            self_dict["participants"] = [
+                participant.to_json() for participant in self.participants
+            ]
 
         return self_dict
 
