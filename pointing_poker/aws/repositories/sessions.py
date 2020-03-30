@@ -18,7 +18,7 @@ class SessionsDynamoDBRepo:
             else "sessions"
         )
 
-    def create(self, session: models.Session, record_expiration=0) -> None:
+    def create(self, session: models.Session, record_expiration) -> None:
         self.table.put_item(
             Item={
                 "id": session.id,
@@ -154,7 +154,7 @@ class SessionsDynamoDBRepo:
         self.table.delete_item(Key={"sessionID": session_id, "id": session_id})
 
     def add_participant(
-        self, session_id: str, participant: models.Participant, record_expiration=0
+        self, session_id: str, participant: models.Participant, record_expiration
     ) -> None:
         try:
             self.table.put_item(

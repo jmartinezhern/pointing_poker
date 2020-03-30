@@ -66,7 +66,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
             reviewingIssue=models.ReviewingIssue(),
         )
 
-        repo.create(session)
+        repo.create(session, record_expiration=0)
 
         record = table.get_item(Key={"sessionID": session.id, "id": session.id})
 
@@ -87,7 +87,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
 
         session = session_factory()
 
-        repo.create(session)
+        repo.create(session, record_expiration=0)
 
         record = repo.get(session.id)
 
@@ -103,7 +103,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
 
         session = session_factory()
 
-        repo.create(session)
+        repo.create(session, record_expiration=0)
 
         self.assertEqual(repo.get(session.id), session)
 
@@ -129,7 +129,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
 
         session = session_factory()
 
-        repo.create(session)
+        repo.create(session, record_expiration=0)
 
         participant = models.Participant(
             id=str(uuid4()),
@@ -138,7 +138,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
             vote=models.Vote(points=0, abstained=True),
         )
 
-        repo.add_participant(session.id, participant)
+        repo.add_participant(session.id, participant, record_expiration=0)
 
         record = table.get_item(Key={"sessionID": session.id, "id": participant.id})
 
@@ -156,7 +156,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
 
         session = session_factory()
 
-        repo.create(session)
+        repo.create(session, record_expiration=0)
 
         participant = models.Participant(
             id=str(uuid4()),
@@ -165,10 +165,10 @@ class SessionsRepositoryTestCase(unittest.TestCase):
             vote=models.Vote(points=0, abstained=True),
         )
 
-        repo.add_participant(session.id, participant)
+        repo.add_participant(session.id, participant, record_expiration=0)
 
         try:
-            repo.add_participant(session.id, participant)
+            repo.add_participant(session.id, participant, record_expiration=0)
         except Exception as err:
             self.assertEqual(
                 err.args[0], f"participant with id {participant.id} already exists"
@@ -184,13 +184,13 @@ class SessionsRepositoryTestCase(unittest.TestCase):
 
         session = session_factory()
 
-        repo.create(session)
+        repo.create(session, record_expiration=0)
 
         participant = models.Participant(
             id=str(uuid4()), name="John", isModerator=True,
         )
 
-        repo.add_participant(session.id, participant)
+        repo.add_participant(session.id, participant, record_expiration=0)
 
         self.assertEqual(
             participant, repo.get_participant_in_session(session.id, participant.id)
@@ -206,7 +206,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
 
         session = session_factory()
 
-        repo.create(session)
+        repo.create(session, record_expiration=0)
 
         self.assertIsNone(repo.get_participant_in_session(session.id, "bogus"))
 
@@ -251,13 +251,13 @@ class SessionsRepositoryTestCase(unittest.TestCase):
 
         session = session_factory()
 
-        repo.create(session)
+        repo.create(session, record_expiration=0)
 
         participant = models.Participant(
             id=str(uuid4()), name="John", isModerator=True,
         )
 
-        repo.add_participant(session.id, participant)
+        repo.add_participant(session.id, participant, record_expiration=0)
 
         session = repo.get(session.id)
 
@@ -273,7 +273,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
 
         session = session_factory()
 
-        repo.create(session)
+        repo.create(session, record_expiration=0)
 
         participant = models.Participant(
             id=str(uuid4()),
@@ -282,7 +282,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
             vote=models.Vote(points=0, abstained=True),
         )
 
-        repo.add_participant(session.id, participant)
+        repo.add_participant(session.id, participant, record_expiration=0)
 
         repo.set_vote(
             session.id, participant.id, models.Vote(points=5, abstained=False)
@@ -303,7 +303,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
 
         session = session_factory()
 
-        repo.create(session)
+        repo.create(session, record_expiration=0)
 
         repo.set_reviewing_issue(
             session.id,
@@ -329,7 +329,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
 
         session = session_factory()
 
-        repo.create(session)
+        repo.create(session, record_expiration=0)
 
         repo.set_voting_state(session.id, True)
 
