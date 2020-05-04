@@ -16,8 +16,6 @@ class SessionService:
         moderator: models.ParticipantDescription,
     ) -> models.Session:
 
-        today_plus_day = int(time() + (24 * 60 * 60))
-
         session = models.Session(
             id=str(uuid()),
             name=description.name,
@@ -27,7 +25,7 @@ class SessionService:
             reviewingIssue=models.ReviewingIssue(),
             participants=[],
             createdAt=int(time()),
-            expiresIn=today_plus_day,
+            expiresIn=int(time() + (24 * 60 * 60)),
         )
 
         session.participants.append(
