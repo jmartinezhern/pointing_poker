@@ -1,6 +1,5 @@
 from os import environ
 from typing import Union
-from time import time
 
 from botocore.exceptions import ClientError
 from boto3 import resource
@@ -178,7 +177,7 @@ class SessionsDynamoDBRepo:
         self.table.delete_item(Key={"sessionID": session_id, "id": participant_id})
 
     def set_vote(
-        self, session_id: str, participant_id: str, vote: Union[models.Vote]
+        self, session_id: str, participant_id: str, vote: Union[models.Vote, None]
     ) -> None:
 
         try:

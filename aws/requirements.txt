@@ -1,2 +1,0 @@
-awscli
-aws-sam-cli

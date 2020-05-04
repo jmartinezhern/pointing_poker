@@ -1,5 +1,5 @@
 from pointing_poker.aws.repositories import sessions as session_repo
-from pointing_poker.aws.services import sessions as session_service
+from pointing_poker.services import sessions as session_service
 from pointing_poker.models import models
 
 
