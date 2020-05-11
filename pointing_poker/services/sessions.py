@@ -1,94 +1,81 @@
 from time import time
 from uuid import UUID
 from shortuuid import uuid
-from typing import Union
-
-from pointing_poker.models import models
 
 
 class SessionService:
     def __init__(self, repo):
         self.repo = repo
 
-    def create_session(
-        self,
-        description: models.SessionDescription,
-        moderator: models.ParticipantDescription,
-    ) -> models.Session:
+    def create_session(self, description, moderator):
+        moderator["isModerator"] = True
 
-        session = models.Session(
-            id=str(uuid()),
-            name=description.name,
-            pointingMax=description.pointingMax,
-            pointingMin=description.pointingMin,
-            votingStarted=False,
-            reviewingIssue=models.ReviewingIssue(),
-            participants=[],
-            createdAt=int(time()),
-            expiresIn=int(time() + (24 * 60 * 60)),
-        )
+        session_expiration = int(time() + (24 * 60 * 60))
 
-        session.participants.append(
-            models.Participant(id=moderator.id, name=moderator.name, isModerator=True)
-        )
+        session_id = str(uuid())
 
-        self.repo.create(session, record_expiration=session.expiresIn)
+        session = {
+            "id": session_id,
+            "name": description["name"],
+            "pointingMax": description["pointingMax"],
+            "pointingMin": description["pointingMin"],
+            "votingStarted": False,
+            "createdAt": int(time()),
+            "expiresIn": session_expiration,
+        }
+
+        self.repo.create(session, record_expiration=session_expiration)
+
+        session["participants"] = [moderator]
 
         self.repo.add_participant(
-            session.id, session.participants[0], record_expiration=session.expiresIn
+            session_id, moderator, record_expiration=session_expiration
         )
 
         return session
 
-    def set_reviewing_issue(
-        self, session_id: str, issue: models.ReviewingIssueDescription
-    ) -> models.Session:
+    def set_reviewing_issue(self, session_id, issue):
         session = self.repo.get(session_id)
 
         if session is None:
             raise Exception(f"session with id {session_id} not found")
 
-        session.reviewingIssue = models.ReviewingIssue(
-            title=issue.title, description=issue.description, url=issue.url,
-        )
+        session["reviewingIssue"] = issue
 
-        self.repo.set_reviewing_issue(session_id, session.reviewingIssue)
+        self.repo.set_reviewing_issue(session_id, session["reviewingIssue"])
 
         return session
 
-    def session(self, session_id: str) -> models.Session:
-        session: Union[models.Session, None] = self.repo.get(session_id)
+    def session(self, session_id):
+        session = self.repo.get(session_id)
 
         if session is None:
             raise Exception(f"session with id {session_id} not found")
 
         return session
 
-    def join_session(
-        self, session_id: str, participant_description: models.ParticipantDescription
-    ) -> models.Session:
-        participant_description.id = str(UUID(participant_description.id, version=4))
+    def join_session(self, session_id, participant):
+        participant["id"] = str(UUID(participant["id"], version=4))
 
-        session: models.Session = self.repo.get(session_id)
+        session = self.repo.get(session_id)
 
         if session is None:
             raise Exception(f"session with id {session_id} not found")
 
-        participant = models.Participant(
-            id=participant_description.id,
-            name=participant_description.name,
-            isModerator=False,
-        )
+        participant = {
+            **participant,
+            "isModerator": False,
+        }
 
         self.repo.add_participant(
-            session_id, participant, record_expiration=session.expiresIn
+            session_id, participant, record_expiration=session["expiresIn"]
         )
 
-        session.participants.append(participant)
+        session["participants"].append(participant)
 
         return session
 
-    def leave_session(self, session_id: str, participant_id: str) -> models.Session:
+    def leave_session(self, session_id, participant_id):
         participant = self.repo.get_participant_in_session(session_id, participant_id)
 
         if participant is None:
@@ -100,9 +87,7 @@ class SessionService:
 
         return self.repo.get(session_id)
 
-    def set_vote(
-        self, session_id: str, participant_id: str, vote: models.Vote
-    ) -> models.Session:
+    def set_vote(self, session_id, participant_id, vote):
         session = self.repo.get(session_id)
 
         if session is None:
@@ -119,15 +104,15 @@ class SessionService:
 
         participant_idx = [
             i
-            for i, value in enumerate(session.participants)
-            if value.id == participant_id
+            for i, value in enumerate(session["participants"])
+            if value["id"] == participant_id
         ][0]
 
-        session.participants[participant_idx].vote = vote
+        session["participants"][participant_idx]["vote"] = vote
 
         return session
 
-    def start_voting(self, session_id: str) -> models.Session:
+    def start_voting(self, session_id: str):
         session = self.repo.get(session_id)
 
         if session is None:
@@ -135,16 +120,16 @@ class SessionService:
 
         self.repo.set_voting_state(session_id, True)
 
-        for idx, participant in enumerate(session.participants):
-            if not participant.isModerator:
-                session.participants[idx].vote = None
-                self.repo.set_vote(session_id, participant.id, None)
+        for idx, participant in enumerate(session["participants"]):
+            if not participant["isModerator"]:
+                session["participants"][idx]["vote"] = None
+                self.repo.set_vote(session_id, participant["id"], None)
 
-        session.votingStarted = True
+        session["votingStarted"] = True
 
         return session
 
-    def stop_voting(self, session_id: str) -> models.Session:
+    def stop_voting(self, session_id: str):
         session = self.repo.get(session_id)
 
         if session is None:
@@ -154,7 +139,7 @@ class SessionService:
 
         return self.repo.get(session_id)
 
-    def close_session(self, session_id: str) -> models.Session:
+    def close_session(self, session_id: str):
         session = self.repo.get(session_id)
 
         if session is None:
@@ -164,7 +149,7 @@ class SessionService:
 
         return session
 
-    def participant(self, user_id: str) -> models.Participant:
+    def participant(self, user_id: str):
         participant = self.repo.get_participant(user_id)
 
         if participant is None:

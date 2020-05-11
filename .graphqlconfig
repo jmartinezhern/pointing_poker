@@ -1,0 +1,4 @@
+{
+  "name": "Pointing Poker GraphQL Schema",
+  "schemaPath": "./schema.graphql"
+}

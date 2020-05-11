@@ -19,7 +19,7 @@ class AppStack(Stack):
 
         self.table: Table = session_table(self, "sessions-table", **kwargs)
 
-        self.api, self.api_key = graphql_api(
+        self.api = graphql_api(
             self, "pointing-poker-graphql-api", graph_schema_path, **kwargs,
         )
 

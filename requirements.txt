@@ -1,3 +1,6 @@
 coverage
 black
 codecov
+behave
+gql
+graphql-core==2.1

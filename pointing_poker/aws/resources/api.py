@@ -17,11 +17,7 @@ def graphql_api(scope: Construct, res_id: str, schema_path: str, **kwargs):
         **kwargs
     )
 
-    api_key = CfnApiKey(
-        scope, "apiKey", api_id=api.api_id, expires=int(time() + (365 * 24 * 60 * 60)),
-    )
-
-    return api, api_key
+    return api
 
 
 def pointing_poker_sources(

@@ -1,39 +1,38 @@
 from os import environ
-from typing import Union
 
 from botocore.exceptions import ClientError
 from boto3 import resource
 from boto3.dynamodb.conditions import Attr, Key
 
-from pointing_poker.models import models
+
+def _item_to_participant(item):
+    return {
+        "id": item["id"],
+        "name": item["name"],
+        "isModerator": item["isModerator"],
+        "vote": None
+        if "points" not in item or "abstained" not in item
+        else {"points": item["points"], "abstained": item["abstained"]},
+    }
 
 
 class SessionsDynamoDBRepo:
     def __init__(self):
-        self.db = resource("dynamodb")
-        self.table = self.db.Table(
+        self.table = resource("dynamodb").Table(
             environ["SESSIONS_TABLE_NAME"]
             if "SESSIONS_TABLE_NAME" in environ
             else "sessions"
         )
 
-    def create(self, session: models.Session, record_expiration) -> None:
-        self.table.put_item(
-            Item={
-                "id": session.id,
-                "sessionID": session.id,
-                "createdAt": session.createdAt,
-                "name": session.name,
-                "pointingMax": session.pointingMax,
-                "pointingMin": session.pointingMin,
-                "expiresIn": session.expiresIn,
-                "votingStarted": session.votingStarted,
-                "ttl": record_expiration,
-                "type": "session",
-            }
-        )
+    def create(self, session, record_expiration):
+        item = {
+            **session,
+            **{"sessionID": session["id"], "ttl": record_expiration, "type": "session"},
+        }
 
-    def get(self, session_id: str) -> Union[models.Session, None]:
+        self.table.put_item(Item=item)
+
+    def get(self, session_id):
         records = self.table.query(
             KeyConditionExpression=Key("sessionID").eq(session_id)
         )
@@ -44,21 +43,14 @@ class SessionsDynamoDBRepo:
             return None
 
         participants = [
-            models.Participant(
-                id=item["id"],
-                name=item["name"],
-                isModerator=item["isModerator"],
-                vote=None
-                if "points" not in item or "abstained" not in item
-                else models.Vote(points=item["points"], abstained=item["abstained"]),
-            )
+            _item_to_participant(item)
             for item in items
-            if item["type"] == "participant"
+            if item.get("type", "") == "participant"
         ]
 
-        session_item = [item for item in items if item["type"] == "session"][0]
+        session_item = [item for item in items if item.get("type", "") == "session"][0]
 
-        issue = models.ReviewingIssue()
+        issue = {}
 
         if any(
             key in session_item
@@ -68,29 +60,27 @@ class SessionsDynamoDBRepo:
                 "reviewingIssueURL",
             ]
         ):
-            issue = models.ReviewingIssue(
-                title=session_item.get("reviewingIssueTitle"),
-                description=session_item.get("reviewingIssueDescription"),
-                url=session_item.get("reviewingIssueURL"),
-            )
+            issue = {
+                "title": session_item.get("reviewingIssueTitle"),
+                "description": session_item.get("reviewingIssueDescription"),
+                "url": session_item.get("reviewingIssueURL"),
+            }
 
-        session = models.Session(
-            id=session_item["sessionID"],
-            name=session_item["name"],
-            createdAt=session_item["createdAt"],
-            pointingMax=session_item["pointingMax"],
-            pointingMin=session_item["pointingMin"],
-            expiresIn=session_item["expiresIn"],
-            votingStarted=session_item["votingStarted"],
-            participants=participants,
-            reviewingIssue=issue,
-        )
+        session = {
+            "id": session_item["sessionID"],
+            "name": session_item["name"],
+            "createdAt": session_item["createdAt"],
+            "pointingMax": session_item["pointingMax"],
+            "pointingMin": session_item["pointingMin"],
+            "expiresIn": session_item["expiresIn"],
+            "votingStarted": session_item["votingStarted"],
+            "participants": participants,
+            "reviewingIssue": issue,
+        }
 
         return session
 
-    def get_participant_in_session(
-        self, session_id: str, participant_id: str
-    ) -> Union[models.Participant, None]:
+    def get_participant_in_session(self, session_id, participant_id):
         record = self.table.get_item(
             Key={"sessionID": session_id, "id": participant_id}
         )
@@ -98,18 +88,9 @@ class SessionsDynamoDBRepo:
         if "Item" not in record:
             return None
 
-        item = record["Item"]
+        return _item_to_participant(record["Item"])
 
-        return models.Participant(
-            id=item["id"],
-            name=item["name"],
-            isModerator=item["isModerator"],
-            vote=None
-            if "points" not in item or "abstained" not in item
-            else models.Vote(points=item["points"], abstained=item["abstained"]),
-        )
-
-    def get_participant(self, user_id: str):
+    def get_participant(self, user_id):
         records = self.table.query(
             IndexName="id-index", KeyConditionExpression=Key("id").eq(user_id)
         )
@@ -119,49 +100,36 @@ class SessionsDynamoDBRepo:
         if not items:
             return None
 
-        item = items[0]
+        return _item_to_participant(items[0])
 
-        return models.Participant(
-            id=item["id"],
-            name=item["name"],
-            isModerator=item["isModerator"],
-            vote=None
-            if "points" not in item or "abstained" not in item
-            else models.Vote(points=item["points"], abstained=item["abstained"]),
-        )
-
-    def set_reviewing_issue(self, session_id: str, issue: models.ReviewingIssue):
+    def set_reviewing_issue(self, session_id, issue):
         self.table.update_item(
             Key={"sessionID": session_id, "id": session_id},
             UpdateExpression="SET reviewingIssueTitle = :title, "
             "reviewingIssueDescription = :description, reviewingIssueURL = :url",
             ExpressionAttributeValues={
-                ":title": issue.title,
-                ":description": issue.description,
-                ":url": issue.url,
+                f":{key}": value for (key, value) in issue.items()
             },
         )
 
-    def set_voting_state(self, session_id: str, value: bool) -> None:
+    def set_voting_state(self, session_id, value):
         self.table.update_item(
             Key={"sessionID": session_id, "id": session_id},
             UpdateExpression="SET votingStarted = :value",
             ExpressionAttributeValues={":value": value},
         )
 
-    def delete_session(self, session_id) -> None:
+    def delete_session(self, session_id):
         self.table.delete_item(Key={"sessionID": session_id, "id": session_id})
 
-    def add_participant(
-        self, session_id: str, participant: models.Participant, record_expiration
-    ) -> None:
+    def add_participant(self, session_id, participant, record_expiration):
         try:
             self.table.put_item(
                 Item={
                     "sessionID": session_id,
-                    "id": participant.id,
-                    "name": participant.name,
-                    "isModerator": participant.isModerator,
+                    "id": participant["id"],
+                    "name": participant["name"],
+                    "isModerator": participant["isModerator"],
                     "ttl": record_expiration,
                     "type": "participant",
                 },
@@ -169,17 +137,16 @@ class SessionsDynamoDBRepo:
             )
         except ClientError as err:
             if err.response["Error"]["Code"] == "ConditionalCheckFailedException":
-                raise Exception(f"participant with id {participant.id} already exists")
+                raise Exception(
+                    f"participant with id {participant['id']} already exists"
+                )
             else:
                 raise Exception("failed to put item")
 
-    def remove_participant(self, session_id: str, participant_id: str) -> None:
+    def remove_participant(self, session_id, participant_id):
         self.table.delete_item(Key={"sessionID": session_id, "id": participant_id})
 
-    def set_vote(
-        self, session_id: str, participant_id: str, vote: Union[models.Vote, None]
-    ) -> None:
-
+    def set_vote(self, session_id, participant_id, vote):
         try:
             key = {
                 "sessionID": session_id,
@@ -199,8 +166,8 @@ class SessionsDynamoDBRepo:
                 ConditionExpression=Attr("id").eq(participant_id),
                 UpdateExpression="SET points = :points, abstained = :abstained",
                 ExpressionAttributeValues={
-                    ":abstained": vote.abstained,
-                    ":points": vote.points,
+                    ":abstained": vote["abstained"],
+                    ":points": vote["points"],
                 },
             )
         except ClientError as err:

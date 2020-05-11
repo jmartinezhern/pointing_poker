@@ -1,140 +1,84 @@
 from pointing_poker.aws.repositories import sessions as session_repo
 from pointing_poker.services import sessions as session_service
-from pointing_poker.models import models
 
 
-def create_session(event, _):
-    payload = event["sessionDescription"]
+def _default_service(service):
+    if service is None:
+        return session_service.SessionService(session_repo.SessionsDynamoDBRepo())
 
-    session_description = models.SessionDescription(
-        name=payload["name"],
-        pointingMax=payload["pointingMax"],
-        pointingMin=payload["pointingMin"],
-    )
+    return service
 
-    moderator_description = models.ParticipantDescription(
-        id=event["moderator"]["id"], name=event["moderator"]["name"]
-    )
 
-    return (
-        session_service.SessionService(session_repo.SessionsDynamoDBRepo())
-        .create_session(session_description, moderator_description)
-        .to_json()
+def create_session(event, _, service=None):
+    session_description = event["sessionDescription"]
+
+    moderator_description = event["moderator"]
+
+    return _default_service(service).create_session(
+        session_description, moderator_description
     )
 
 
-def session(event, _):
+def session(event, _, service=None):
     session_id = event["sessionID"]
 
-    return (
-        session_service.SessionService(session_repo.SessionsDynamoDBRepo())
-        .session(session_id)
-        .to_json()
-    )
+    return _default_service(service).session(session_id)
 
 
-def session_state_changed(event, _):
+def session_state_changed(event, _, service=None):
     session_id = event["id"]
 
-    return (
-        session_service.SessionService(session_repo.SessionsDynamoDBRepo())
-        .session(session_id)
-        .to_json()
-    )
+    return _default_service(service).session(session_id)
 
 
-def join_session(event, _):
+def join_session(event, _, service=None):
     session_id = event["sessionID"]
-    payload = event["participant"]
+    participant_description = event["participant"]
 
-    participant_description = models.ParticipantDescription(
-        id=payload["id"], name=payload["name"]
-    )
-
-    return (
-        session_service.SessionService(session_repo.SessionsDynamoDBRepo())
-        .join_session(session_id, participant_description)
-        .to_json()
-    )
+    return _default_service(service).join_session(session_id, participant_description)
 
 
-def leave_session(event, _):
+def leave_session(event, _, service=None):
     session_id = event["sessionID"]
     participant_id = event["participantID"]
 
-    return (
-        session_service.SessionService(session_repo.SessionsDynamoDBRepo())
-        .leave_session(session_id, participant_id)
-        .to_json()
-    )
+    return _default_service(service).leave_session(session_id, participant_id)
 
 
-def close_session(event, _):
+def close_session(event, _, service=None):
     session_id = event["sessionID"]
 
-    return (
-        session_service.SessionService(session_repo.SessionsDynamoDBRepo())
-        .close_session(session_id)
-        .to_json()
-    )
+    return _default_service(service).close_session(session_id)
 
 
-def set_vote(event, _):
+def set_vote(event, _, service=None):
     session_id = event["sessionID"]
     participant_id = event["participantID"]
-    vote = models.Vote(
-        points=event["vote"]["points"], abstained=event["vote"]["abstained"]
-    )
+    vote = event["vote"]
 
-    return (
-        session_service.SessionService(session_repo.SessionsDynamoDBRepo())
-        .set_vote(session_id, participant_id, vote)
-        .to_json()
-    )
+    return _default_service(service).set_vote(session_id, participant_id, vote)
 
 
-def start_voting(event, _):
+def start_voting(event, _, service=None):
     session_id = event["sessionID"]
 
-    return (
-        session_service.SessionService(session_repo.SessionsDynamoDBRepo())
-        .start_voting(session_id)
-        .to_json()
-    )
+    return _default_service(service).start_voting(session_id)
 
 
-def stop_voting(event, _):
+def stop_voting(event, _, service=None):
     session_id = event["sessionID"]
 
-    return (
-        session_service.SessionService(session_repo.SessionsDynamoDBRepo())
-        .stop_voting(session_id)
-        .to_json()
-    )
+    return _default_service(service).stop_voting(session_id)
 
 
-def set_reviewing_issue(event, _):
+def set_reviewing_issue(event, _, service=None):
     session_id = event["sessionID"]
-    description = event["issue"]
+    issue = event["issue"]
 
-    issue = models.ReviewingIssueDescription(
-        title=description.get("title"),
-        description=description.get("description"),
-        url=description.get("url"),
-    )
-
-    return (
-        session_service.SessionService(session_repo.SessionsDynamoDBRepo())
-        .set_reviewing_issue(session_id, issue)
-        .to_json()
-    )
+    return _default_service(service).set_reviewing_issue(session_id, issue)
 
 
-def participant(event, _):
-    user_id = event["id"]
+def participant(event, _, service=None):
+    participant_id = event["id"]
 
-    return (
-        session_service.SessionService(session_repo.SessionsDynamoDBRepo())
-        .participant(user_id)
-        .to_json()
-    )
+    return _default_service(service).participant(participant_id)
