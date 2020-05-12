@@ -1,5 +1,5 @@
 ![](https://github.com/jmartinezhern/pointing_poker/workflows/Python%20package/badge.svg)
-[![codecov](https://codecov.io/gh/jmartinezhern/pointing_poker/branch/master/graph/badge.svg)](https://codecov.io/gh/jmartinezhern/syndication)
+[![codecov](https://codecov.io/gh/jmartinezhern/pointing_poker/branch/master/graph/badge.svg)](https://codecov.io/gh/jmartinezhern/pointing_poker)
 [![BCH compliance](https://bettercodehub.com/edge/badge/jmartinezhern/pointing_poker?branch=master)](https://bettercodehub.com/)
 
 # Pointing Poker
