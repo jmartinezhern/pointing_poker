@@ -12,26 +12,42 @@ transport = RequestsHTTPTransport(
     verify=False,
 )
 
-client = Client(retries=3, transport=transport, fetch_schema_from_transport=True,)
+client = Client(retries=3, transport=transport, fetch_schema_from_transport=True)
 
 create_session_query = gql(
     """
-mutation {
-  createSession(
-    sessionDescription: {
-      name: "poker",
-      pointingMin: 1,
-      pointingMax: 100
-    },
-    moderator: {
-      id: "1234",
-      name: "John"
+    mutation {
+      createSession(
+        sessionDescription: {
+          name: "poker",
+          pointingMin: 1,
+          pointingMax: 100
+        },
+        moderator: {
+          id: "1234",
+          name: "John"
+        }
+      ) {
+        id
+      }
     }
-  ) {
-    id
-  }
-}
-"""
+    """
+)
+
+join_session_query = gql(
+    """
+    mutation ($sessionID: ID!, $participantID: ID!, $name: String!) {
+      joinSession(sessionID: $sessionID, participant: {
+        id: $participantID,
+        name: $name
+      }) {
+        participants {
+          id
+          name
+        }
+      }
+    }
+    """
 )
 
 use_step_matcher("parse")
@@ -116,6 +132,22 @@ def step_impl(context):
     )
 
 
+@when("we execute the graphql query with the last session and participant")
+def step_impl(context):
+    session_id = getattr(context, "session_id")
+    if session_id is None:
+        raise RuntimeError(f"A session is not defined")
+
+    participant_id = getattr(context, "participant_id")
+    if participant_id is None:
+        raise RuntimeError(f"A participant is not defined")
+
+    context.response = client.execute(
+        context.query,
+        variable_values={"sessionID": session_id, "participantID": participant_id},
+    )
+
+
 @then('the field "{field}" is json')
 def step_impl(context, field):
     value = get_value_for_field(context, field)
@@ -138,3 +170,21 @@ def step_impl(context, field):
 
     if value is not False:
         raise ValueError(f"Expected field to be false. Got {value}.")
+
+
+@step('a participant with id "{participant_id}" and name "{name}"')
+def step_impl(context, participant_id, name):
+    session_id = getattr(context, "session_id")
+    if session_id is None:
+        raise RuntimeError(f"A session is not defined")
+
+    client.execute(
+        join_session_query,
+        variable_values={
+            "sessionID": session_id,
+            "participantID": participant_id,
+            "name": name,
+        },
+    )
+
+    context.participant_id = participant_id

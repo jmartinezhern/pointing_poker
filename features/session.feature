@@ -164,3 +164,35 @@ Feature: Operate on pointing poker sessions
     When we execute the graphql query with the last session
 
     Then the field "votingStarted" is False
+
+  @set_vote
+  Scenario: Set Vote
+    Given a poker session
+    And a participant with id "c2c7f148-fa36-49b9-bfb4-0e643daf6bff" and name "test"
+    And a graphql query for field "setVote"
+    """
+    mutation ($sessionID: ID!, $participantID: ID!) {
+      setVote(sessionID: $sessionID, participantID: $participantID, vote: {points: 1, abstained: false}) {
+        participants {
+          id
+          vote {
+            points
+            abstained
+          }
+        }
+      }
+    }
+    """
+
+    When we execute the graphql query with the last session and participant
+
+    Then the field "participants" contains
+    """
+    {
+      "id": "c2c7f148-fa36-49b9-bfb4-0e643daf6bff",
+      "vote": {
+        "points": 1,
+        "abstained": false
+      }
+    }
+    """
