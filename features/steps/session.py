@@ -1,9 +1,13 @@
+import urllib3
+
 from os import environ
 from json import loads
 
 from behave import *
 from gql import gql, Client
 from gql.transport.requests import RequestsHTTPTransport
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 transport = RequestsHTTPTransport(
     url=f"https://{environ['GRAPHQL_ENDPOINT']}/graphql",
