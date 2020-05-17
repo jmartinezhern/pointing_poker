@@ -76,6 +76,26 @@ Feature: Operate on pointing poker sessions
     And the field "pointingMax" equals 100
     And the field "participants" is not empty
 
+  Scenario: Get a participant
+    Given a poker session
+    And a participant with id "c2c7f148-fa36-49b9-bfb4-0e643daf6bff" and name "test"
+    And a graphql query for field "participant"
+    """
+    query ($participantID: ID!) {
+      participant(id: $participantID) {
+        id
+        name
+        isModerator
+      }
+    }
+    """
+
+    When we execute the graphql query with the last session and participant
+
+    Then the field "id" matches "c2c7f148-fa36-49b9-bfb4-0e643daf6bff"
+    And the field "name" matches "test"
+    And the field "isModerator" is False
+
   Scenario: Join a session
     Given a poker session
     And a graphql query for field "joinSession"
