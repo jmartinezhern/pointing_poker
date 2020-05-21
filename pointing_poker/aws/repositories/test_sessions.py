@@ -20,6 +20,7 @@ def session_factory():
             "pointingMax": 0,
             "pointingMin": 1,
             "votingStarted": False,
+            "closed": False,
             "createdAt": int(time()),
             "expiresIn": int(time() + 24 * 60 * 60),
         },
@@ -67,6 +68,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
             "pointingMax": 0,
             "pointingMin": 1,
             "votingStarted": False,
+            "closed": False,
             "createdAt": int(time()),
             "expiresIn": int(time() + 24 * 60 * 60),
         }
@@ -81,6 +83,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
         self.assertEqual(record["Item"]["pointingMin"], session["pointingMin"])
         self.assertEqual(record["Item"]["expiresIn"], session["expiresIn"])
         self.assertEqual(record["Item"]["votingStarted"], session["votingStarted"])
+        self.assertEqual(record["Item"]["closed"], session["closed"])
 
     @mock_dynamodb2
     def test_get_session(self):
@@ -101,6 +104,7 @@ class SessionsRepositoryTestCase(unittest.TestCase):
         self.assertEqual(record["pointingMin"], session["pointingMin"])
         self.assertEqual(record["expiresIn"], session["expiresIn"])
         self.assertEqual(record["votingStarted"], session["votingStarted"])
+        self.assertEqual(record["closed"], session["closed"])
 
     @mock_dynamodb2
     def test_delete_session(self):

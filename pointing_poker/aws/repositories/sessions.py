@@ -27,7 +27,9 @@ class SessionsDynamoDBRepo:
     def create(self, session, record_expiration):
         item = {
             **session,
-            **{"sessionID": session["id"], "ttl": record_expiration, "type": "session"},
+            "sessionID": session["id"],
+            "ttl": record_expiration,
+            "type": "session",
         }
 
         self.table.put_item(Item=item)
@@ -67,15 +69,9 @@ class SessionsDynamoDBRepo:
             }
 
         session = {
-            "id": session_item["sessionID"],
-            "name": session_item["name"],
-            "createdAt": session_item["createdAt"],
-            "pointingMax": session_item["pointingMax"],
-            "pointingMin": session_item["pointingMin"],
-            "expiresIn": session_item["expiresIn"],
-            "votingStarted": session_item["votingStarted"],
-            "participants": participants,
+            **session_item,
             "reviewingIssue": issue,
+            "participants": participants,
         }
 
         return session
