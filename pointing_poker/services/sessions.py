@@ -22,6 +22,7 @@ class SessionService:
             "votingStarted": False,
             "createdAt": int(time()),
             "expiresIn": session_expiration,
+            "closed": False,
         }
 
         self.repo.create(session, record_expiration=session_expiration)
@@ -146,6 +147,8 @@ class SessionService:
             raise Exception(f"session with id {session_id} not found")
 
         self.repo.delete_session(session_id)
+
+        session["closed"] = True
 
         return session
 

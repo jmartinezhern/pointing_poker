@@ -17,6 +17,7 @@ Feature: Operate on pointing poker sessions
       ) {
         id
         createdAt
+        closed
         expiresIn
         votingStarted
         name
@@ -37,6 +38,7 @@ Feature: Operate on pointing poker sessions
     And the field "name" matches "poker"
     And the field "pointingMin" equals 1
     And the field "pointingMax" equals 100
+    And the field "closed" is False
     And the field "participants" contains
     """
     {
@@ -230,3 +232,18 @@ Feature: Operate on pointing poker sessions
       }
     }
     """
+
+  Scenario: Close session
+    Given a poker session
+    And a graphql query for field "closeSession"
+    """
+    mutation ($sessionID: ID!) {
+      closeSession(sessionID: $sessionID) {
+        closed
+      }
+    }
+    """
+
+    When we execute the graphql query with the last session
+
+    Then the field "closed" is True

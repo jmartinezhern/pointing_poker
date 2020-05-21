@@ -33,6 +33,7 @@ type Session {
     pointingMax: Int!
     expiresIn: Int!
     votingStarted: Boolean!
+    closed: Boolean!
 }
 
 input SessionDescription {
