@@ -1,5 +1,6 @@
 import urllib3
 
+from ast import literal_eval
 from os import environ
 from json import loads
 
@@ -81,7 +82,10 @@ def step_impl(context, field):
 
 @when("we execute the graphql query")
 def step_impl(context):
-    context.response = client.execute(context.query)
+    try:
+        context.response = client.execute(context.query)
+    except Exception as error:
+        context.error = error
 
 
 @then('the field "{field}" matches "{match}"')
@@ -192,3 +196,17 @@ def step_impl(context, participant_id, name):
     )
 
     context.participant_id = participant_id
+
+
+@then('the response contains error with message "{message}"')
+def step_impl(context, message):
+    error = getattr(context, "error")
+    if not error:
+        raise ValueError(f"There was no error")
+
+    error_message = literal_eval(str(error))["message"]
+
+    if error_message != message:
+        raise ValueError(
+            f"Expected error to have message {message}. Got {error_message}"
+        )

@@ -76,6 +76,20 @@ Feature: Operate on pointing poker sessions
     And the field "pointingMax" equals 100
     And the field "participants" is not empty
 
+  Scenario: Get missing session
+    Given a graphql query for field "session"
+    """
+    query {
+      session(sessionID: "bogus") {
+        id
+      }
+    }
+    """
+
+    When we execute the graphql query
+
+    Then the response contains error with message "session with id bogus not found"
+
   Scenario: Get a participant
     Given a poker session
     And a participant with id "c2c7f148-fa36-49b9-bfb4-0e643daf6bff" and name "test"
