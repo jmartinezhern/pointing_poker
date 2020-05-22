@@ -1,5 +1,6 @@
 from time import time
 from uuid import UUID
+
 from shortuuid import uuid
 
 
@@ -81,7 +82,7 @@ class SessionService:
 
         if participant is None:
             raise Exception(
-                f"participant with id {participant_id} is not part of session with {session_id}"
+                f"participant with id {participant_id} is not part of session with id {session_id}"
             )
 
         self.repo.remove_participant(session_id, participant_id)
@@ -98,7 +99,7 @@ class SessionService:
 
         if participant is None:
             raise Exception(
-                f"participant with id {participant_id} is not part of session with {session_id}"
+                f"participant with id {participant_id} is not part of session with id {session_id}"
             )
 
         self.repo.set_vote(session_id, participant_id, vote)
@@ -152,10 +153,10 @@ class SessionService:
 
         return session
 
-    def participant(self, user_id: str):
-        participant = self.repo.get_participant(user_id)
+    def participant(self, participant_id: str):
+        participant = self.repo.get_participant(participant_id)
 
         if participant is None:
-            raise Exception(f"participant with id {user_id} was not found")
+            raise Exception(f"participant with id {participant_id} was not found")
 
         return participant
