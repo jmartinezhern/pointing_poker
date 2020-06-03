@@ -101,8 +101,7 @@ class SessionsDynamoDBRepo:
     def set_reviewing_issue(self, session_id, issue):
         self.table.update_item(
             Key={"sessionID": session_id, "id": session_id},
-            UpdateExpression="SET reviewingIssueTitle = :title, "
-            "reviewingIssueDescription = :description, reviewingIssueURL = :url",
+            UpdateExpression=f"SET {','.join(list(map(lambda key: 'reviewing_issue_'+key+' = :'+key, issue.keys())))}",
             ExpressionAttributeValues={
                 f":{key}": value for (key, value) in issue.items()
             },

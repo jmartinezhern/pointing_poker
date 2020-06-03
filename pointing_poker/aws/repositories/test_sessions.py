@@ -340,9 +340,9 @@ class SessionsRepositoryTestCase(unittest.TestCase):
         item = table.get_item(Key={"sessionID": session_id, "id": session_id})
 
         self.assertIn("Item", item)
-        self.assertEqual(item["Item"]["reviewingIssueTitle"], "My Issue")
-        self.assertEqual(item["Item"]["reviewingIssueDescription"], "Work to do")
-        self.assertEqual(item["Item"]["reviewingIssueURL"], "https://example.com")
+        self.assertEqual(item["Item"]["reviewing_issue_title"], "My Issue")
+        self.assertEqual(item["Item"]["reviewing_issue_description"], "Work to do")
+        self.assertEqual(item["Item"]["reviewing_issue_url"], "https://example.com")
 
     @mock_dynamodb2
     def test_set_voting_state(self):
