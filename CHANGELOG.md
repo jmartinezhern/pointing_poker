@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.0.1](https://github.com/jmartinezhern/pointing_poker/compare/v1.0.0...v1.0.1) (2020-06-03)
+
+
+### Bug Fixes
+
+* update expression should correspond to keys ([712c658](https://github.com/jmartinezhern/pointing_poker/commit/712c658cbd106c36ccd4b14018cc16750b73720e))
+
 ## 1.0.0 (2020-05-22)
 
 
