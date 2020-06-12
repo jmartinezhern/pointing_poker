@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.0.2](https://github.com/jmartinezhern/pointing_poker/compare/v1.0.1...v1.0.2) (2020-06-12)
+
+
+### Bug Fixes
+
+* clearing review issue should be possible ([ef60ad1](https://github.com/jmartinezhern/pointing_poker/commit/ef60ad1a2c4ced3415cd334a6459872607a2e73b))
+
 ### [1.0.1](https://github.com/jmartinezhern/pointing_poker/compare/v1.0.0...v1.0.1) (2020-06-03)
 
 
