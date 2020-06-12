@@ -87,6 +87,23 @@ class SessionsServiceTestCase(TestCase):
             msg="session with id bogus not found",
         )
 
+    def test_set_reviewing_issue_to_empty(self):
+        issue = {}
+
+        expected_session = session_factory()
+
+        self.repo.get.return_value = expected_session
+
+        session = self.service.set_reviewing_issue(expected_session["id"], issue)
+
+        self.repo.set_reviewing_issue.assert_called_with(
+            expected_session["id"], {"title": None, "description": None, "url": None}
+        )
+
+        self.assertEqual(session["reviewingIssue"]["title"], None)
+        self.assertEqual(session["reviewingIssue"]["description"], None)
+        self.assertEqual(session["reviewingIssue"]["url"], None)
+
     def test_session(self):
         expected_session = session_factory()
 

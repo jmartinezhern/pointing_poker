@@ -42,6 +42,13 @@ class SessionService:
         if session is None:
             raise Exception(f"session with id {session_id} not found")
 
+        if not issue:
+            issue = {
+                "title": None,
+                "description": None,
+                "url": None,
+            }
+
         session["reviewingIssue"] = issue
 
         self.repo.set_reviewing_issue(session_id, session["reviewingIssue"])

@@ -344,6 +344,14 @@ class SessionsRepositoryTestCase(unittest.TestCase):
         self.assertEqual(item["Item"]["reviewing_issue_description"], "Work to do")
         self.assertEqual(item["Item"]["reviewing_issue_url"], "https://example.com")
 
+    def test_set_reviewing_issue_empty(self):
+        from pointing_poker.aws.repositories import sessions
+
+        try:
+            sessions.SessionsDynamoDBRepo().set_reviewing_issue("", {})
+        except Exception as e:
+            self.fail(f"set_reviewing_issue raised exception {e}")
+
     @mock_dynamodb2
     def test_set_voting_state(self):
         from pointing_poker.aws.repositories import sessions

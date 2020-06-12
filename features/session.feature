@@ -171,6 +171,66 @@ Feature: Operate on pointing poker sessions
     }
     """
 
+  Scenario: Set Reviewing Issue - clear fields
+    Given a poker session
+    And a graphql query for field "setReviewingIssue"
+    """
+    mutation ($sessionID: ID!) {
+      setReviewingIssue(
+        sessionID: $sessionID,
+        issue: {
+          title: "ISS-1234",
+          description: "Something we need to do",
+          url: "https://example.com"
+        }
+      ) {
+        reviewingIssue {
+          title
+          description
+          url
+        }
+      }
+    }
+    """
+
+    When we execute the graphql query with the last session
+
+    Then the field "reviewingIssue" is json
+    """
+    {
+      "title": "ISS-1234",
+      "description": "Something we need to do",
+      "url": "https://example.com"
+    }
+    """
+
+    Given a graphql query for field "setReviewingIssue"
+    """
+    mutation ($sessionID: ID!) {
+      setReviewingIssue(
+        sessionID: $sessionID,
+        issue: {}
+      ) {
+        reviewingIssue {
+          title
+          description
+          url
+        }
+      }
+    }
+    """
+
+    When we execute the graphql query with the last session
+
+    Then the field "reviewingIssue" is json
+    """
+    {
+      "title": null,
+      "description": null,
+      "url": null
+    }
+    """
+
  Scenario: Set Reviewing Issue - URL only
    Given a poker session
    And a graphql query for field "setReviewingIssue"

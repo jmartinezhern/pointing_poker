@@ -99,6 +99,9 @@ class SessionsDynamoDBRepo:
         return _item_to_participant(items[0])
 
     def set_reviewing_issue(self, session_id, issue):
+        if not issue:
+            return
+
         self.table.update_item(
             Key={"sessionID": session_id, "id": session_id},
             UpdateExpression=f"SET {','.join(list(map(lambda key: 'reviewing_issue_'+key+' = :'+key, issue.keys())))}",
