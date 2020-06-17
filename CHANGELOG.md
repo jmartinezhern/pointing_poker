@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.0.3](https://github.com/jmartinezhern/pointing_poker/compare/v1.0.2...v1.0.3) (2020-06-17)
+
+
+### Bug Fixes
+
+* get session uses wrong keys for reviewing issue ([e368f53](https://github.com/jmartinezhern/pointing_poker/commit/e368f5377c1ce1d866705353b4ee4c7466b55782))
+
 ### [1.0.2](https://github.com/jmartinezhern/pointing_poker/compare/v1.0.1...v1.0.2) (2020-06-12)
 
 
