@@ -57,15 +57,15 @@ class SessionsDynamoDBRepo:
         if any(
             key in session_item
             for key in [
-                "reviewingIssueTitle",
-                "reviewingIssueDescription",
-                "reviewingIssueURL",
+                "reviewing_issue_title",
+                "reviewing_issue_description",
+                "reviewing_issue_url",
             ]
         ):
             issue = {
-                "title": session_item.get("reviewingIssueTitle"),
-                "description": session_item.get("reviewingIssueDescription"),
-                "url": session_item.get("reviewingIssueURL"),
+                "title": session_item.get("reviewing_issue_title"),
+                "description": session_item.get("reviewing_issue_description"),
+                "url": session_item.get("reviewing_issue_url"),
             }
 
         session = {

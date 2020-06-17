@@ -23,6 +23,9 @@ def session_factory():
             "closed": False,
             "createdAt": int(time()),
             "expiresIn": int(time() + 24 * 60 * 60),
+            "reviewing_issue_title": "IS-123",
+            "reviewing_issue_url": "https://example.com",
+            "reviewing_issue_description": "TODO",
         },
     )
 
@@ -71,6 +74,9 @@ class SessionsRepositoryTestCase(unittest.TestCase):
             "closed": False,
             "createdAt": int(time()),
             "expiresIn": int(time() + 24 * 60 * 60),
+            "reviewing_issue_title": "IS-123",
+            "reviewing_issue_url": "https://example.com",
+            "reviewing_issue_description": "TODO",
         }
 
         repo.create(session, record_expiration=0)
@@ -84,6 +90,16 @@ class SessionsRepositoryTestCase(unittest.TestCase):
         self.assertEqual(record["Item"]["expiresIn"], session["expiresIn"])
         self.assertEqual(record["Item"]["votingStarted"], session["votingStarted"])
         self.assertEqual(record["Item"]["closed"], session["closed"])
+        self.assertEqual(
+            record["Item"]["reviewing_issue_title"], session["reviewing_issue_title"]
+        )
+        self.assertEqual(
+            record["Item"]["reviewing_issue_url"], session["reviewing_issue_url"]
+        )
+        self.assertEqual(
+            record["Item"]["reviewing_issue_description"],
+            session["reviewing_issue_description"],
+        )
 
     @mock_dynamodb2
     def test_get_session(self):
@@ -105,6 +121,16 @@ class SessionsRepositoryTestCase(unittest.TestCase):
         self.assertEqual(record["expiresIn"], session["expiresIn"])
         self.assertEqual(record["votingStarted"], session["votingStarted"])
         self.assertEqual(record["closed"], session["closed"])
+        self.assertEqual(
+            record["reviewingIssue"]["title"], session["reviewing_issue_title"]
+        )
+        self.assertEqual(
+            record["reviewingIssue"]["url"], session["reviewing_issue_url"]
+        )
+        self.assertEqual(
+            record["reviewingIssue"]["description"],
+            session["reviewing_issue_description"],
+        )
 
     @mock_dynamodb2
     def test_delete_session(self):
